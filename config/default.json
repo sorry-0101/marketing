@@ -1,0 +1,13 @@
+
+{
+    "app_config":{
+        "app_port":9001,
+        "api_service_dtl": {
+			"host": "http://localhost:9001",
+			"api_timeout": 240000 
+		},
+       "db_services_dtl":{
+        "mongodb_uri":"mongodb+srv://admin:Shivangi0127@demo-cluster-1.pgtrl.mongodb.net/?retryWrites=true&w=majority&appName=Demo-Cluster-1"
+       }
+    }
+}
