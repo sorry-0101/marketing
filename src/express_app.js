@@ -9,6 +9,7 @@ import cors from 'cors';
 import connectDB from './utils/setupMongoDb.js';
 
 import userRouter from './routes/user.routes.js'
+import  adminRouter from './routes/admin.routes.js'
 
 dotenv.config({path:'./.env'});
 
@@ -42,7 +43,8 @@ export default async (param)=>{
 
 
 
-    app.use("/api/users", userRouter)
+    app.use("/api/users", userRouter);
+    app.use("/api/admin", adminRouter);
 
     // setupApiService(global.app_config.api_service_dtl);
     return app;
