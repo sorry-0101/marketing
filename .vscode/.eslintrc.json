@@ -1,0 +1,44 @@
+{
+	"env": {
+		"browser": true,
+		"commonjs": true,
+		"es6": true
+	},
+	// "extends": "eslint:recommended",
+	"parserOptions": {
+		"ecmaVersion": 2018
+	},
+	"globals": {
+		"Atomics": "readonly",
+		"SharedArrayBuffer": "readonly",
+		"__dirname": false,
+		"__filename": false,
+		"rsg_logger": false,
+		"rsg_mailer": false,
+		"process": false,
+		"rsg_memcacheUtility": false
+	},
+	"rules": {
+		// "indent": [
+		// 	"error",
+		// 	"tab"
+		// ],
+		"linebreak-style": [
+			"error",
+			"windows"
+		],
+		"quotes": [
+			"error",
+			"single"
+		],
+		// "semi": [
+		// 	"error",
+		// 	"always"
+		// ],
+		"curly": [
+			"error",
+			"multi-line"
+		],
+		"eqeqeq": "error"
+	}
+}
