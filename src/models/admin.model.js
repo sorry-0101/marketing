@@ -23,6 +23,38 @@ const adminSchema = new Schema(
 			type: Number,
 			require: true,
 			trim: true
+		},
+		productImg: {
+			type: String, // cloudinary url
+		}
+	},
+	{
+		timestamps: true
+	}
+);
+
+const EventSchema = new Schema(
+	{
+		title: {
+			type: String,
+			require: true,
+			index: true,
+			trim: true
+		},
+		startDate: {
+			type: String,
+			require: true,
+			trim: true
+		},
+		endDate: {
+			type: String,
+			require: true,
+			trim: true
+		},
+		description: {
+			type: String,
+			require: true,
+			trim: true
 		}
 	},
 	{
@@ -31,3 +63,4 @@ const adminSchema = new Schema(
 );
 
 export const Admin = mongoose.model('Products', adminSchema);
+export const Events = mongoose.model('Events', EventSchema);

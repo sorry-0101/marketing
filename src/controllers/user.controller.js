@@ -36,11 +36,12 @@ const registerUser = asyncHandler(async (req, res) => {
 	// return res
 
 
-	const { fullName, email, username, password } = req.body;
+	const { fullName, email, username, password, mobileNo } = req.body,
+		{ shared_Id: sharedId } = req.query;
 	//console.log("email: ", email);
 
 	if (
-		[fullName, email, username, password].some((field) => field?.trim() === "")
+		[fullName, email, username, password, sharedId, mobileNo].some((field) => field?.trim() === "")
 	) {
 		throw new ApiError(400, "All fields are required");
 	}
@@ -54,7 +55,7 @@ const registerUser = asyncHandler(async (req, res) => {
 	}
 	//console.log(req.files);
 
-	const avatarLocalPath = req.files?.avatar[0]?.path;
+	const avatarLocalPath = req.files?.avatar?.[0]?.path;
 
 	if (!avatarLocalPath) {
 		throw new ApiError(400, "Avatar file is required")
@@ -72,7 +73,9 @@ const registerUser = asyncHandler(async (req, res) => {
 		avatar: avatar.url,
 		email,
 		password,
-		username: username?.toLowerCase()
+		username: username?.toLowerCase(),
+		sharedId,
+		mobileNo
 	});
 
 	const createdUser = await User.findById(user._id).select(

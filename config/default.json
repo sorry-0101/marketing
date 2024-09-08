@@ -1,13 +1,17 @@
-
 {
-    "app_config":{
-        "app_port":9001,
-        "api_service_dtl": {
+	"app_config": {
+		"app_port": 9001,
+		"api_service_dtl": {
 			"host": "http://localhost:9001",
-			"api_timeout": 240000 
+			"api_timeout": 240000
 		},
-       "db_services_dtl":{
-        "mongodb_uri":"mongodb+srv://admin:Shivangi0127@demo-cluster-1.pgtrl.mongodb.net/?retryWrites=true&w=majority&appName=Demo-Cluster-1"
-       }
-    }
+		"db_services_dtl": {
+			"mongodb_uri": "mongodb+srv://admin:Shivangi0127@demo-cluster-1.pgtrl.mongodb.net/?retryWrites=true&w=majority&appName=Demo-Cluster-1"
+		},
+		"cloudinary_details": {
+			"CLOUDINARY_CLOUD_NAME": "dqc19jdwd",
+			"CLOUDINARY_API_KEY": "821619143512213",
+			"CLOUDINARY_API_SECRET": "SAf3_kDncWab4P2IkmfSlL0V-Sg"
+		}
+	}
 }

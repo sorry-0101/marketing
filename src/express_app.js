@@ -6,46 +6,46 @@ import express from 'express';
 import cookieParser from "cookie-parser"
 import cors from 'cors';
 // import setupApiService from './utils/setupApiService';
-import connectDB from './utils/setupMongoDb.js';
 
-import userRouter from './routes/user.routes.js'
-import  adminRouter from './routes/admin.routes.js'
 
-dotenv.config({path:'./.env'});
+// dotenv.config({ path: './.env' });
 
 const app = express();
 
-export default async (param)=>{
+global.app_config = config.get('app_config');
 
-    global.app_config = config.get('app_config');
+// Body parser, reading data from body into req.body
+app.use(express.json({
+	limit: '100mb'
+}));
 
-    // Body parser, reading data from body into req.body
-	app.use(express.json({
-		limit: '100mb'
-	}));
+// URL Encoding for req.body
+app.use(express.urlencoded({
+	limit: '100mb',
+	extended: true,
+	parameterLimit: 1000000
+}));
 
-	// URL Encoding for req.body
-	app.use(express.urlencoded({
-		limit: '100mb',
-		extended: true,
-		parameterLimit: 1000000
-	}));
-
-    app.use(cors({
-        origin:  process.env.CORS_ORIGIN||'*',
-        credentials: true
-    }));
-
-    app.use(express.static("public"));
-    app.use(cookieParser());
-
-    await connectDB(global.app_config.db_services_dtl);
+app.use(cors({
+	origin: process.env.CORS_ORIGIN || '*',
+	credentials: true
+}));
 
 
+// importing routes
+import userRouter from './routes/user.routes.js'
+import adminRouter from './routes/admin.routes.js'
 
-    app.use("/api/users", userRouter);
-    app.use("/api/admin", adminRouter);
+app.use(express.static("public"));
+app.use(cookieParser());
 
-    // setupApiService(global.app_config.api_service_dtl);
-    return app;
-}
+// importing db setup file
+import connectDB from './utils/setupMongoDb.js';
+await connectDB(global.app_config.db_services_dtl);
+
+
+
+app.use("/api/users", userRouter);
+app.use("/api/admin", adminRouter);
+
+export { app }

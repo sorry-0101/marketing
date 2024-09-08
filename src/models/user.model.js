@@ -25,9 +25,18 @@ const userSchema = new Schema(
 			trim: true,
 			index: true
 		},
+		mobileNo: {
+			type: Number,
+			required: true
+		},
 		password: {
 			type: String,
 			required: [true, 'Password is required']
+		},
+		sharedId: {
+			type: String,
+			require: true,
+			trim: true
 		},
 		refreshToken: {
 			type: String
