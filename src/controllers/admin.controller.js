@@ -4,6 +4,7 @@ import { ApiResponse } from '../utils/ApiResponse.js'; // Standard API response 
 import { Admin, Events } from '../models/admin.model.js'; // Admin and Events model imports
 import { User } from '../models/user.model.js'; // User model import
 import { uploadOnCloudinary } from "../utils/cloudinary.js"; // Utility for uploading images to Cloudinary
+import { ApiError } from '../utils/ApiError.js';
 
 // Create an instance of ApiResponse to handle response formatting
 const createResponse = new ApiResponse();
@@ -62,14 +63,27 @@ const addProduct = asyncHandler(async (req, res) => {
  */
 const addEvent = asyncHandler(async (req, res) => {
 	const { title, start_date: startDate, end_date: endDate, description } = req.body;
+	// Check for product image in the request
+	const eventImgPath = req.files?.eventImg?.[0]?.path;
 
 	// Validate required fields
 	if ([title, startDate, endDate, description].some((field) => typeof field === 'string' && field.trim() === "")) {
 		return res.status(400).json(400, {}, 'All fields are required');
 	}
 
+	if (!eventImgPath) {
+		throw new ApiError(400, "Event Image is required");
+	}
+
+	// Upload product image to Cloudinary
+	const eventImgObj = await uploadOnCloudinary(eventImgPath);
+
+	if (!eventImgObj) {
+		throw new ApiError(400, "Event file is required");
+	}
+
 	// Create new event in the database
-	const event = await Events.create({ title, startDate, endDate, description });
+	const event = await Events.create({ title, startDate, endDate, description, eventImg: eventImgObj.url });
 	const addedEvent = await Events.findById(event._id).select();
 
 	// Return success response with the added event
@@ -77,6 +91,37 @@ const addEvent = asyncHandler(async (req, res) => {
 		new ApiResponse(200, addedEvent, 'Event added successfully')
 	);
 });
+
+// Controller to update Events Data
+const updateEvent = asyncHandler(async (req, res) => {
+	const { event_id: eventId, title, start_date: startDate, end_date: endDate, description } = req.body;
+	const eventImgPath = req.files?.eventImg?.[0]?.path;
+
+	if (!eventId) {
+		throw new ApiError(400, "Event id not found");
+	}
+
+	if (!startDate || !endDate || !description || !title) {
+		throw new ApiError(400, "All Fields are required");
+	}
+
+	if (!eventImgPath) {
+		throw new ApiError(400, "Event image is missing");
+	}
+
+	// Upload new Event Image to Cloudinary
+	const eventImgObj = await uploadOnCloudinary(eventImgPath);
+	if (!eventImgObj.url) {
+		throw new ApiError(400, "Error while uploading Event Image");
+	}
+
+	// Update the Events Data
+	const updatedEvent = await Events.findByIdAndUpdate(eventId, { $set: { title, startDate, endDate, description, eventImg: eventImgObj.url } }, { new: true }).select();
+
+	// Return success response
+	return res.status(200).json(new ApiResponse(200, updatedEvent, "Event Details updated successfully"));
+});
+
 
 /**
  * @desc Get all products
@@ -151,5 +196,6 @@ export {
 	getAllProduct,
 	getUserRecords,
 	addEvent,
-	getEventRecords
+	getEventRecords,
+	updateEvent
 };

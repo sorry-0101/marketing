@@ -67,6 +67,10 @@ const EventSchema = new Schema(
 			type: String,
 			require: true,
 			trim: true
+		},
+		// event image URL (e.g., Cloudinary URL), stored as a string
+		eventImg: {
+			type: String,
 		}
 	},
 	{
