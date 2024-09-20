@@ -1,13 +1,37 @@
 // Import required modules and utilities
 import { asyncHandler } from '../utils/asyncHandler.js'; // Handles async errors
 import { ApiResponse } from '../utils/ApiResponse.js'; // Standard API response format
-import { Admin, Events } from '../models/admin.model.js'; // Admin and Events model imports
+import { Product, Events, AdminLogin } from '../models/admin.model.js'; // Admin and Events model imports
 import { User } from '../models/user.model.js'; // User model import
 import { uploadOnCloudinary } from "../utils/cloudinary.js"; // Utility for uploading images to Cloudinary
 import { ApiError } from '../utils/ApiError.js';
 
 // Create an instance of ApiResponse to handle response formatting
 const createResponse = new ApiResponse();
+
+// Helper function to generate access and refresh tokens
+const generateAccessAndRefreshTokens = async (userId) => {
+	try {
+		// Find the user by ID
+		const admin = await AdminLogin.findById(userId);
+
+		// Generate access and refresh tokens
+		const accessToken = admin.generateAccessToken();
+		const refreshToken = admin.generateRefreshToken();
+
+		// Save the refresh token to the user document
+		admin.refreshToken = refreshToken;
+		await admin.save({ validateBeforeSave: false });
+
+		// Return the tokens
+		return { accessToken, refreshToken };
+
+	} catch (error) {
+		// Handle any errors during token generation
+		throw new ApiError(500, "Something went wrong while generating refresh and access token");
+	}
+};
+
 
 /**
  * @desc Get home data by user ID
@@ -18,6 +42,92 @@ const getHomeData = asyncHandler(async (req, res) => {
 	const { user_id: userId } = req.params;
 	return createResponse.success(res, userId, 'Admin API successfully fetched');
 });
+
+// Controller for user registration
+const registerAdmin = asyncHandler(async (req, res) => {
+	const { email, user_name: username, password, mobile_no: mobileNo, is_admin: isAdmin } = req.body;
+
+	// Validate required fields
+	if ([email, username, password, mobileNo].some((field) => field?.trim() === "")) {
+		throw new ApiError(400, "All fields are required");
+	}
+
+	// Check if a user with the same email or username already exists
+	const existedUser = await AdminLogin.findOne({ $or: [{ username }, { email }] });
+	if (existedUser) {
+		throw new ApiError(409, "User with email or username already exists");
+	}
+
+	// Check if the avatar image is provided
+	const avatarLocalPath = req.files?.adminImg?.[0]?.path || null;
+	if (avatarLocalPath) {
+		// Upload avatar to Cloudinary
+		var avatar = await uploadOnCloudinary(avatarLocalPath);
+		if (!avatar) {
+			throw new ApiError(400, "Avatar file is required");
+		}
+	}
+
+	// Create a new user
+	const admin = await AdminLogin.create({
+		avatar: avatar?.url || null,
+		email,
+		password,
+		username: username?.toLowerCase(),
+		mobileNo,
+		isAdmin
+	});
+
+	// Fetch the created user without password and refreshToken fields
+	const registeredAdmin = await AdminLogin.findById(admin._id).select("-password -refreshToken");
+
+	if (!registeredAdmin) {
+		throw new ApiError(500, "Something went wrong while registering the user");
+	}
+
+	// Return success response
+	return res.status(201).json(new ApiResponse(200, registeredAdmin, "Admin registered Successfully"));
+});
+
+
+// Controller for user login
+const adminLogin = asyncHandler(async (req, res) => {
+	const { mobile_no: mobileNo, password } = req.body;
+
+	// Validate if either email or username is provided
+	if (!mobileNo && !password) {
+		throw new ApiError(400, "password or mobileNo is required");
+	}
+
+	// Find user by email or username
+	const admin = await AdminLogin.findOne({ $or: [{ mobileNo }] });
+	if (!admin) {
+		throw new ApiError(404, "Admin does not exist");
+	}
+
+	// Validate password
+	const isPasswordValid = await admin.isPasswordCorrect(password);
+	if (!isPasswordValid) {
+		throw new ApiError(401, "Invalid user credentials");
+	}
+
+	// Generate access and refresh tokens
+	const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(admin._id);
+
+	// Fetch the logged-in user without password and refreshToken fields
+	const loggedInAdmin = await AdminLogin.findById(admin._id).select("-password -refreshToken");
+
+	// Set HTTP-only and secure cookie options
+	const options = { httpOnly: true, secure: true };
+
+	// Return success response with tokens and user info
+	return res
+		.status(200)
+		.cookie("accessToken", accessToken, options)
+		.cookie("refreshToken", refreshToken, options)
+		.json(new ApiResponse(200, { admin: loggedInAdmin, accessToken, refreshToken }, "Admin logged In Successfully"));
+});
+
 
 /**
  * @desc Add a new product
@@ -47,8 +157,8 @@ const addProduct = asyncHandler(async (req, res) => {
 	}
 
 	// Create new product in the database
-	const product = await Admin.create({ productName, level, ratioBetween, price, productImg: productImgObj.url });
-	const addedProduct = await Admin.findById(product._id).select();
+	const product = await Product.create({ productName, level, ratioBetween, price, productImg: productImgObj.url });
+	const addedProduct = await Product.findById(product._id).select();
 
 	// Return success response with the added product
 	return res.status(200).json(
@@ -122,6 +232,31 @@ const updateEvent = asyncHandler(async (req, res) => {
 	return res.status(200).json(new ApiResponse(200, updatedEvent, "Event Details updated successfully"));
 });
 
+const deleteEventRecord = asyncHandler(async (req, res) => {
+	const { event_id: eventId, } = req.body;  // Get the ID from the request body
+
+	// Validate if ID is provided
+	if (!eventId) {
+		return res.status(400).json(
+			new ApiResponse(400, {}, 'Event ID is required')
+		);
+	}
+
+	// Find the event by ID and delete it
+	const deletedEvent = await Events.findByIdAndDelete(eventId);
+
+	// If the event is not found
+	if (!deletedEvent) {
+		return res.status(404).json(
+			new ApiResponse(404, {}, 'Event not found')
+		);
+	}
+
+	// Return success response
+	return res.status(200).json(
+		new ApiResponse(200, deletedEvent, 'Event deleted successfully')
+	);
+});
 
 /**
  * @desc Get all products
@@ -130,7 +265,7 @@ const updateEvent = asyncHandler(async (req, res) => {
  */
 const getAllProduct = asyncHandler(async (req, res) => {
 	// Fetch all products from the database
-	const allProducts = await Admin.find();
+	const allProducts = await Product.find();
 
 	// Check if there are no products fetched
 	if (!allProducts) {
@@ -197,5 +332,8 @@ export {
 	getUserRecords,
 	addEvent,
 	getEventRecords,
-	updateEvent
+	updateEvent,
+	deleteEventRecord,
+	adminLogin,
+	registerAdmin
 };

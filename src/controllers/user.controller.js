@@ -31,11 +31,13 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 // Controller for user registration
 const registerUser = asyncHandler(async (req, res) => {
-	const { fullName, email, username, password, mobileNo } = req.body;
+	const { email, username, password, mobileNo } = req.body;
 	const { shared_Id: sharedId } = req.query;
 
+	if (!sharedId) throw new ApiError(400, "SharedId No found");
+
 	// Validate required fields
-	if ([fullName, email, username, password, sharedId, mobileNo].some((field) => field?.trim() === "")) {
+	if ([email, username, password, sharedId, mobileNo].some((field) => field?.trim() === "")) {
 		throw new ApiError(400, "All fields are required");
 	}
 
@@ -59,8 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 	// Create a new user
 	const user = await User.create({
-		fullName,
-		avatar: avatar.url,
+		adminImg: avatar.url,
 		email,
 		password,
 		username: username?.toLowerCase(),
@@ -81,15 +82,15 @@ const registerUser = asyncHandler(async (req, res) => {
 
 // Controller for user login
 const loginUser = asyncHandler(async (req, res) => {
-	const { email, username, password } = req.body;
+	const { mobile_no: mobileNo, password } = req.body;
 
 	// Validate if either email or username is provided
-	if (!username && !email) {
-		throw new ApiError(400, "Username or email is required");
+	if (!mobileNo && !password) {
+		throw new ApiError(400, "mobileNo or password is required");
 	}
 
 	// Find user by email or username
-	const user = await User.findOne({ $or: [{ username }, { email }] });
+	const user = await User.findOne({ $or: [{ mobileNo }] });
 	if (!user) {
 		throw new ApiError(404, "User does not exist");
 	}

@@ -1,3 +1,4 @@
+'use strict'
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -22,17 +23,12 @@ const userSchema = new Schema(
 			lowercase: true,
 			trim: true,
 		},
-		// Full name of the user, indexed for better search performance
-		fullName: {
-			type: String,
-			required: true,
-			trim: true,
-			index: true
-		},
 		// Mobile number is required
 		mobileNo: {
 			type: Number,
-			required: true
+			required: true,
+			unique: true,
+			trim: true,
 		},
 		// Password field: required and needs validation message when missing
 		password: {
@@ -43,7 +39,8 @@ const userSchema = new Schema(
 		sharedId: {
 			type: String,
 			require: true,
-			trim: true
+			trim: true,
+			unique: true
 		},
 		// Field for storing the refresh token (used for authentication)
 		refreshToken: {

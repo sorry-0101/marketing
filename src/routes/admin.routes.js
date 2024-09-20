@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getHomeData, addProduct, getAllProduct, getUserRecords, addEvent, getEventRecords, updateEvent } from "../controllers/admin.controller.js"; // Import controller functions
+import { getHomeData, addProduct, getAllProduct, getUserRecords, addEvent, getEventRecords, updateEvent, deleteEventRecord, adminLogin, registerAdmin } from "../controllers/admin.controller.js"; // Import controller functions
 import { verifyJWT } from "../middlewares/auth.middleware.js"; // Import JWT verification middleware
 import { upload } from "../middlewares/multer.middleware.js"; // Import multer middleware for handling file uploads
 
@@ -7,6 +7,13 @@ const router = new Router(); // Initialize express router
 
 // Route to fetch home data, protected by JWT verification
 router.route('/home').get(verifyJWT, getHomeData);
+
+router.route('/registerAdmin').post(upload.fields([{
+	name: "adminImg",
+	maxCount: 1
+}]), registerAdmin);
+
+router.route('/adminLogin').post(verifyJWT, adminLogin);
 
 // Route to add a product, protected by JWT verification
 // Uses multer to handle single file upload for product image ("productImg")
@@ -33,6 +40,9 @@ router.route('/updateEvent').post(verifyJWT, upload.fields([{
 	name: "eventImg",
 	maxCount: 1
 }]), updateEvent);
+
+// Route to get all event records, protected by JWT verification
+router.route('/deleteEvent').post(verifyJWT, deleteEventRecord);
 
 // Route to get user records, protected by JWT verification
 router.route('/getUserRecords').get(verifyJWT, getUserRecords);
