@@ -38,9 +38,12 @@ const userSchema = new Schema(
 		// Shared ID, required for some logic in the application
 		sharedId: {
 			type: String,
-			require: true,
 			trim: true,
-			unique: true
+			index: true // Adds a non-unique index
+		},
+		userId: {
+			type: String,
+			trim: true
 		},
 		// Field for storing the refresh token (used for authentication)
 		refreshToken: {

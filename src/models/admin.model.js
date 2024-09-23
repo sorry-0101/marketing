@@ -125,7 +125,7 @@ const adminSchema = new Schema(
 			require: true,
 		},
 		// Field for storing the refresh token (used for authentication)
-		refreshToken: {
+		refreshTokenAdmin: {
 			type: String
 		},
 		// Avatar URL (e.g., from Cloudinary) to store the user's profile picture
@@ -165,7 +165,7 @@ adminSchema.methods.generateAccessToken = function () {
 			username: this.username,
 			fullName: this.fullName
 		},
-		process.env.ACCESS_TOKEN_SECRET, // Secret key for signing the access token
+		process.env.ACCESS_TOKEN_SECRET_ADMIN, // Secret key for signing the access token
 		{
 			expiresIn: process.env.ACCESS_TOKEN_EXPIRY // Access token expiry duration (from environment variable)
 		}

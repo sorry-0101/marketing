@@ -31,53 +31,65 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 // Controller for user registration
 const registerUser = asyncHandler(async (req, res) => {
-	const { email, username, password, mobileNo } = req.body;
-	const { shared_Id: sharedId } = req.query;
+	try {
+		const { email, username, password, mobileNo } = req.body;
+		const { shared_Id: sharedId } = req.query;
 
-	if (!sharedId) throw new ApiError(400, "SharedId No found");
+		let userId = '';
+		let str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnlpqrstuvwxyz0123456789';
+		for (let i = 1; i <= 5; i++) {
+			let char = Math.floor(Math.random() * str.length + 1);
+			userId += str.charAt(char);
+		}
 
-	// Validate required fields
-	if ([email, username, password, sharedId, mobileNo].some((field) => field?.trim() === "")) {
-		throw new ApiError(400, "All fields are required");
+		if (!sharedId) throw new ApiError(400, "SharedId No found");
+
+		// Validate required fields
+		if ([email, username, password, sharedId, mobileNo].some((field) => field?.trim() === "")) {
+			throw new ApiError(400, "All fields are required");
+		}
+
+		// Check if a user with the same email or username already exists
+		const existedUser = await User.findOne({ $or: [{ username }, { email }, { mobileNo }] });
+		if (existedUser) {
+			throw new ApiError(409, "User with email or username already exists");
+		}
+
+		// Check if the avatar image is provided
+		const avatarLocalPath = req.files?.avatar?.[0]?.path;
+		if (!avatarLocalPath) {
+			throw new ApiError(400, "Avatar file is required");
+		}
+
+		// Upload avatar to Cloudinary
+		const avatar = await uploadOnCloudinary(avatarLocalPath);
+		if (!avatar) {
+			throw new ApiError(400, "Avatar file is required");
+		}
+
+		// Create a new user
+		const user = await User.create({
+			username: username?.toLowerCase(),
+			email,
+			mobileNo,
+			password,
+			sharedId,
+			userId,
+			adminImg: avatar.url,
+		});
+
+		// Fetch the created user without password and refreshToken fields
+		const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
+		if (!createdUser) {
+			throw new ApiError(500, "Something went wrong while registering the user");
+		}
+
+		// Return success response
+		return res.status(201).json(new ApiResponse(200, createdUser, "User registered Successfully"));
+	} catch (error) {
+		throw new ApiError(500, error.message);
 	}
-
-	// Check if a user with the same email or username already exists
-	const existedUser = await User.findOne({ $or: [{ username }, { email }] });
-	if (existedUser) {
-		throw new ApiError(409, "User with email or username already exists");
-	}
-
-	// Check if the avatar image is provided
-	const avatarLocalPath = req.files?.avatar?.[0]?.path;
-	if (!avatarLocalPath) {
-		throw new ApiError(400, "Avatar file is required");
-	}
-
-	// Upload avatar to Cloudinary
-	const avatar = await uploadOnCloudinary(avatarLocalPath);
-	if (!avatar) {
-		throw new ApiError(400, "Avatar file is required");
-	}
-
-	// Create a new user
-	const user = await User.create({
-		adminImg: avatar.url,
-		email,
-		password,
-		username: username?.toLowerCase(),
-		sharedId,
-		mobileNo
-	});
-
-	// Fetch the created user without password and refreshToken fields
-	const createdUser = await User.findById(user._id).select("-password -refreshToken");
-
-	if (!createdUser) {
-		throw new ApiError(500, "Something went wrong while registering the user");
-	}
-
-	// Return success response
-	return res.status(201).json(new ApiResponse(200, createdUser, "User registered Successfully"));
 });
 
 // Controller for user login
@@ -220,6 +232,49 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 	return res.status(200).json(new ApiResponse(200, user, "Avatar image updated successfully"));
 });
 
+// Controller to get users at different referral levels
+const getUsersAtLevel = asyncHandler(async (req, res, _, user_id = null, min_level = null, visitedUsers = null) => {
+	try {
+		// Extract user_id from query if not passed as an argument
+		const userId = user_id || req?.query?.user_id;
+		const minLevel = min_level || 1;
+		const maxLevel = 5;
+
+		const userLevels = await getUsersLevel(userId, minLevel, maxLevel);
+		// Return the result of the recursion (for deeper levels)]
+		return res.status(200).json(new ApiResponse(200, userLevels, "Data fetched successfully"));
+	} catch (error) {
+		// Catch any errors and send an appropriate response
+		throw new ApiError(400, error.message || "Something went wrong");
+	}
+});
+
+
+const getUsersLevel = async (userId, level = 1, maxLevel = 5) => {
+	try {
+		if (level > maxLevel) {
+			return []; // Stop recursion if we reach the max level
+		}
+		// Find all users directly sponsored by the given userId
+		const directReferrals = await User.find({ sharedId: userId });
+
+		let allReferrals = [...directReferrals];
+
+		// Recursively find referrals for each direct referral
+		for (let referral of directReferrals) {
+			const deeperReferrals = await getUsersLevel(referral.userId, level + 1, maxLevel);
+			allReferrals = allReferrals.concat(deeperReferrals); // Combine current level's referrals with deeper levels
+		}
+
+		return allReferrals;
+	} catch (error) {
+		throw error;
+	}
+
+};
+
+
+
 export {
 	registerUser,
 	loginUser,
@@ -229,4 +284,5 @@ export {
 	getCurrentUser,
 	updateAccountDetails,
 	updateUserAvatar,
+	getUsersAtLevel
 };

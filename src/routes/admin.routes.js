@@ -1,5 +1,16 @@
 import { Router } from "express";
-import { getHomeData, addProduct, getAllProduct, getUserRecords, addEvent, getEventRecords, updateEvent, deleteEventRecord, adminLogin, registerAdmin } from "../controllers/admin.controller.js"; // Import controller functions
+import {
+	getHomeData,
+	addProduct,
+	getAllProduct,
+	getUserRecords,
+	addEvent,
+	getEventRecords,
+	updateEvent,
+	deleteEventRecord,
+	adminLogin,
+	registerAdmin
+} from "../controllers/admin.controller.js"; // Import controller functions
 import { verifyJWT } from "../middlewares/auth.middleware.js"; // Import JWT verification middleware
 import { upload } from "../middlewares/multer.middleware.js"; // Import multer middleware for handling file uploads
 
@@ -13,7 +24,7 @@ router.route('/registerAdmin').post(upload.fields([{
 	maxCount: 1
 }]), registerAdmin);
 
-router.route('/adminLogin').post(verifyJWT, adminLogin);
+router.route('/adminLogin').post(adminLogin);
 
 // Route to add a product, protected by JWT verification
 // Uses multer to handle single file upload for product image ("productImg")

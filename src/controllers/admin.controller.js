@@ -16,15 +16,15 @@ const generateAccessAndRefreshTokens = async (userId) => {
 		const admin = await AdminLogin.findById(userId);
 
 		// Generate access and refresh tokens
-		const accessToken = admin.generateAccessToken();
-		const refreshToken = admin.generateRefreshToken();
+		const accessTokenAdmin = admin.generateAccessToken();
+		const refreshTokenAdmin = admin.generateRefreshToken();
 
 		// Save the refresh token to the user document
-		admin.refreshToken = refreshToken;
+		admin.refreshTokenAdmin = refreshTokenAdmin;
 		await admin.save({ validateBeforeSave: false });
 
 		// Return the tokens
-		return { accessToken, refreshToken };
+		return { accessTokenAdmin, refreshTokenAdmin };
 
 	} catch (error) {
 		// Handle any errors during token generation
@@ -78,8 +78,8 @@ const registerAdmin = asyncHandler(async (req, res) => {
 		isAdmin
 	});
 
-	// Fetch the created user without password and refreshToken fields
-	const registeredAdmin = await AdminLogin.findById(admin._id).select("-password -refreshToken");
+	// Fetch the created user without password and refreshTokenAdmin fields
+	const registeredAdmin = await AdminLogin.findById(admin._id).select("-password -refreshTokenAdmin");
 
 	if (!registeredAdmin) {
 		throw new ApiError(500, "Something went wrong while registering the user");
@@ -112,10 +112,10 @@ const adminLogin = asyncHandler(async (req, res) => {
 	}
 
 	// Generate access and refresh tokens
-	const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(admin._id);
+	const { accessTokenAdmin, refreshTokenAdmin } = await generateAccessAndRefreshTokens(admin._id);
 
-	// Fetch the logged-in user without password and refreshToken fields
-	const loggedInAdmin = await AdminLogin.findById(admin._id).select("-password -refreshToken");
+	// Fetch the logged-in user without password and refreshTokenAdmin fields
+	const loggedInAdmin = await AdminLogin.findById(admin._id).select("-password -refreshTokenAdmin");
 
 	// Set HTTP-only and secure cookie options
 	const options = { httpOnly: true, secure: true };
@@ -123,9 +123,9 @@ const adminLogin = asyncHandler(async (req, res) => {
 	// Return success response with tokens and user info
 	return res
 		.status(200)
-		.cookie("accessToken", accessToken, options)
-		.cookie("refreshToken", refreshToken, options)
-		.json(new ApiResponse(200, { admin: loggedInAdmin, accessToken, refreshToken }, "Admin logged In Successfully"));
+		.cookie("accessTokenAdmin", accessTokenAdmin, options)
+		.cookie("refreshTokenAdmin", refreshTokenAdmin, options)
+		.json(new ApiResponse(200, { admin: loggedInAdmin, accessTokenAdmin, refreshTokenAdmin }, "Admin logged In Successfully"));
 });
 
 

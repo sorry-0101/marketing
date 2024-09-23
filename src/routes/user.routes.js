@@ -8,7 +8,8 @@ import {
 	getCurrentUser,
 	// getUserChannelProfile,
 	updateUserAvatar,
-	updateAccountDetails
+	updateAccountDetails,
+	getUsersAtLevel
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js"; // Middleware for verifying JWT
 import { upload } from "../middlewares/multer.middleware.js" // Middleware for handling file uploads
@@ -48,6 +49,8 @@ router.route("/current-user").get(verifyJWT, getCurrentUser);
 
 // Route for updating account details (full name, email, etc.)
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
+
+router.route("/users-at-Level").get(verifyJWT, getUsersAtLevel);
 
 // Uncomment the following route if user channel profiles are needed
 // router.route("/c/:username").get(verifyJWT, getUserChannelProfile);

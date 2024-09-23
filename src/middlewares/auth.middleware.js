@@ -1,37 +1,58 @@
+'use strict'
+
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
+import { AdminLogin } from "../models/admin.model.js"; // Assuming you have an Admin model
 
-// Middleware to verify JWT for protected routes
+// Middleware to verify JWT for protected routes (both user and admin)
 export const verifyJWT = asyncHandler(async (req, _, next) => {
 	try {
-		// Retrieve the token from cookies or Authorization header (Bearer token)
-		const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+		// Retrieve token for user or admin from cookies or Authorization header (Bearer token)
+		const userToken = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+		const adminToken = req.cookies?.accessTokenAdmin || req.header("Authorization")?.replace("Bearer ", "");
 
-		// Check if the token exists
-		if (!token) {
-			throw new ApiError(401, "Unauthorized request"); // Throw error if token is missing
+		let decodedToken;
+		let userOrAdmin = null;
+
+		// Check if user token exists, else check for admin token
+		if (userToken) {
+			// Verify the user token using user secret key
+			decodedToken = jwt.verify(userToken, process.env.ACCESS_TOKEN_SECRET);
+
+			// Find the user by ID from the decoded token
+			userOrAdmin = await User.findById(decodedToken?._id).select("-password -refreshToken");
+
+			if (!userOrAdmin) {
+				throw new ApiError(401, "Invalid User Access Token");
+			}
+
+			// Attach user data to request object
+			req.user = userOrAdmin;
+
+		} else if (adminToken) {
+			// Verify the admin token using admin secret key
+			decodedToken = jwt.verify(adminToken, process.env.ACCESS_TOKEN_SECRET_ADMIN);
+
+			// Find the admin by ID from the decoded token
+			userOrAdmin = await AdminLogin.findById(decodedToken?._id).select("-password -refreshTokenAdmin");
+
+			if (!userOrAdmin) {
+				throw new ApiError(401, "Invalid Admin Access Token");
+			}
+
+			// Attach admin data to request object
+			req.admin = userOrAdmin;
+		} else {
+			// Throw an error if neither user nor admin token is present
+			throw new ApiError(401, "Unauthorized request");
 		}
 
-		// Verify the token using the secret key
-		const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-		// Find the user by the ID from the decoded token, excluding password and refreshToken fields
-		const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
-
-		// If user is not found or the token is invalid, throw an error
-		if (!user) {
-			throw new ApiError(401, "Invalid Access Token");
-		}
-
-		// Attach the user information to the request object for further use in the request cycle
-		req.user = user;
-
-		// Call the next middleware or controller function
+		// Proceed to the next middleware or controller
 		next();
 	} catch (error) {
-		// Handle any errors during token verification and user lookup
+		// Handle token verification errors
 		throw new ApiError(401, error?.message || "Invalid access token");
 	}
 });
