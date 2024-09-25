@@ -13,6 +13,7 @@ import cors from 'cors';
 const app = express();
 
 global.app_config = config.get('app_config');
+global.logged_in_user = {};
 
 // Body parser, reading data from body into req.body
 app.use(express.json({
@@ -35,6 +36,7 @@ app.use(cors({
 // importing routes
 import userRouter from './routes/user.routes.js'
 import adminRouter from './routes/admin.routes.js'
+import walletRoutes from './routes/wallet.routes.js'
 
 app.use(express.static("public"));
 app.use(cookieParser());
@@ -47,5 +49,6 @@ await connectDB(global.app_config.db_services_dtl);
 
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/wallet", walletRoutes);
 
 export { app }

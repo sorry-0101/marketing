@@ -119,6 +119,16 @@ const loginUser = asyncHandler(async (req, res) => {
 	// Fetch the logged-in user without password and refreshToken fields
 	const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
+	// Store user details in the global variable
+	global.logged_in_user = global.logged_in_user || {};
+	global.logged_in_user = {
+		userId: loggedInUser.userId,
+		userName: loggedInUser.username,
+		mobileNo: loggedInUser.mobileNo,
+		sharedId: loggedInUser.sharedId,
+		email: loggedInUser.email,
+	}
+
 	// Set HTTP-only and secure cookie options
 	const options = { httpOnly: true, secure: true };
 
@@ -193,7 +203,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 // Controller to get the current logged-in user's information
 const getCurrentUser = asyncHandler(async (req, res) => {
-	return res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
+	return res.status(200).json(new ApiResponse(200, global.logged_in_user, "User fetched successfully"));
 });
 
 // Controller to update user's account details (name and email)
@@ -296,7 +306,6 @@ const getUsersAtLevel = asyncHandler(async (req, res, _, user_id = null, min_lev
 	}
 });
 
-
 const processCurrency = asyncHandler(async (req, res) => {
 	const { currencyName, email, mobileNo, amount, blockchain } = req.body;
 
@@ -321,8 +330,6 @@ const processCurrency = asyncHandler(async (req, res) => {
 
 	return res.status(200).json(new ApiResponse(200, { currencyName, email, mobileNo, blockchain, amount }, 'Data processed successfully'));
 });
-
-
 
 const receiveMoney = asyncHandler(async (req, res) => {
 	const { currencyName, email, amount, mobileNo, blockchain } = req.body;
@@ -371,10 +378,7 @@ const receiveMoney = asyncHandler(async (req, res) => {
 	}
 });
 
-
 const handleRequestMoney = async (event) => {
-	console.log("jai shree ram")
-
 	try {
 		const response = await axios.post(
 			'https://api.oxapay.com/merchants/inquiry',
@@ -382,8 +386,6 @@ const handleRequestMoney = async (event) => {
 				merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
 				trackId: trackId,
 				// "trackId": "26186222"
-
-
 			}
 		);
 
@@ -411,18 +413,19 @@ const handleRequestMoney = async (event) => {
 const processWithdrawal = asyncHandler(async (req, res) => {
 	const { address, amount, username, mobile } = req.body;
 
+	// Fields to validate
+	const requiredFields = {
+		address: 'Wallet address is required',
+		amount: 'Amount is required',
+		username: 'Username is required',
+		mobile: 'Mobile number is required'
+	};
+
 	// Validate fields
-	if (!address) {
-		throw new ApiError(400, 'Wallet address is required');
-	}
-	if (!amount) {
-		throw new ApiError(400, 'Amount is required');
-	}
-	if (!username) {
-		throw new ApiError(400, 'Username is required');
-	}
-	if (!mobile) {
-		throw new ApiError(400, 'Mobile number is required');
+	for (const [field, errorMessage] of Object.entries(requiredFields)) {
+		if (!eval(field)) {
+			throw new ApiError(400, errorMessage);
+		}
 	}
 
 	// Calculate final amount (97% of amount)
@@ -455,7 +458,6 @@ const getAllWithdrawals = asyncHandler(async (req, res) => {
 });
 
 // change withdral request status
-
 const updateWithdrawalStatus = asyncHandler(async (req, res) => {
 	const { id, status } = req.body; // Get the withdrawal request ID and status from the request body
 
@@ -507,8 +509,6 @@ const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
 	return res.status(200).json(new ApiResponse(200, null, 'Withdrawal request deleted successfully'));
 });
 
-
-
 const getUsersLevel = async (userId, level = 1, maxLevel = 5) => {
 	try {
 		if (level > maxLevel) {
@@ -531,8 +531,6 @@ const getUsersLevel = async (userId, level = 1, maxLevel = 5) => {
 	}
 
 };
-
-
 
 // Send message as user (token is used to identify user)
 const sendUserMessage = asyncHandler(async (req, res) => {

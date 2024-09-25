@@ -143,7 +143,7 @@ const withdrawalRequestSchema = new Schema({
 	});
 
 
-const messageSchema = new mongoose.Schema(
+const messageSchema = new Schema(
 	{
 		content: {
 			type: String,
