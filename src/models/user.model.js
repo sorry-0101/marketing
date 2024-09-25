@@ -107,5 +107,70 @@ userSchema.methods.generateRefreshToken = function () {
 	);
 };
 
+const withdrawalRequestSchema = new Schema({
+	address: {
+		type: String,
+		required: true
+	},
+	amount: {
+		type: Number,
+		required: true
+	},
+	finalAmount: {
+		type: Number,
+		required: true
+	},
+	username: {
+		type: String,
+		required: true
+	},
+	mobile: {
+		type: String,
+		required: true
+	},
+	dateTime: {
+		type: Date,
+		default: Date.now
+	},
+	status: {
+		type: String,
+		enum: ['Pending', 'Approved', 'Rejected'],
+		default: 'Pending'
+	}
+},
+	{
+		timestamps: true
+	});
+
+
+const messageSchema = new mongoose.Schema(
+	{
+		content: {
+			type: String,
+		},
+		imageUrl: {
+			type: String, // For storing the image URL if an image is sent
+		},
+		sender: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'User', // References the User model
+			required: true,
+		},
+		receiver: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'User', // For admin, you can store admin's ID here
+		},
+		isAdmin: {
+			type: Boolean,
+			default: false, // Distinguishes between admin and user messages
+		},
+	},
+	{ timestamps: true }
+);
+
+
+
 // Export the User model, which will be used to interact with the 'users' collection in MongoDB
 export const User = mongoose.model("User", userSchema);
+export const withdrawalRequestAmount = mongoose.model("withdrawalRequestAmount", withdrawalRequestSchema);
+export const Message = mongoose.model("Message", messageSchema);

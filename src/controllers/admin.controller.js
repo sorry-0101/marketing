@@ -1,8 +1,8 @@
 // Import required modules and utilities
 import { asyncHandler } from '../utils/asyncHandler.js'; // Handles async errors
 import { ApiResponse } from '../utils/ApiResponse.js'; // Standard API response format
-import { Product, Events, AdminLogin } from '../models/admin.model.js'; // Admin and Events model imports
-import { User } from '../models/user.model.js'; // User model import
+import { Product, Events, AdminLogin, Slider, Plan, Country } from '../models/admin.model.js'; // Admin and Events model imports
+import { User, withdrawalRequestAmount, Message } from '../models/user.model.js'; // User model import
 import { uploadOnCloudinary } from "../utils/cloudinary.js"; // Utility for uploading images to Cloudinary
 import { ApiError } from '../utils/ApiError.js';
 
@@ -302,11 +302,375 @@ const getEventRecords = asyncHandler(async (req, res) => {
 	);
 });
 
+
+const uploadSliderImage = asyncHandler(async (req, res) => {
+	// Check for slider image in the request
+	// const sliderImgPath = req.files?.sliderImg?.[0]?.path;
+	const sliderImgPath = req.files?.sliderImg?.[0]?.path;
+	console.log("sliderImgPath", sliderImgPath);
+
+	// Validate that an image has been uploaded
+	if (!sliderImgPath) {
+		throw new ApiError(400, "Slider Image is required");
+	}
+
+	// Upload slider image to Cloudinary (or your preferred image service)
+	const sliderImgObj = await uploadOnCloudinary(sliderImgPath);
+
+	if (!sliderImgObj) {
+		throw new ApiError(400, "Slider file is required");
+	}
+
+	// Optionally store the image URL in a database if required
+	const slider = await Slider.create({ sliderImg: sliderImgObj.url });
+
+	// Return success response with the uploaded image details
+	return res.status(200).json(
+		new ApiResponse(200, slider, 'Slider image uploaded successfully')
+	);
+});
+
+const updateSliderImage = asyncHandler(async (req, res) => {
+	const { id } = req.body;  // Get slider ID from request body
+
+	// Ensure the slider ID is provided
+	if (!id) {
+		throw new ApiError(400, "Slider ID is required");
+	}
+
+	// Check for the new slider image in the request
+	const sliderImgPath = req.files?.sliderImg?.[0]?.path;
+	console.log("sliderImgPath", sliderImgPath);
+
+	// Validate that a new image has been uploaded
+	if (!sliderImgPath) {
+		throw new ApiError(400, "Slider Image is required for update");
+	}
+
+	// Upload new slider image to Cloudinary
+	const sliderImgObj = await uploadOnCloudinary(sliderImgPath);
+
+	if (!sliderImgObj) {
+		throw new ApiError(400, "Slider file upload failed");
+	}
+
+	// Find and update the slider image URL in the database
+	const updatedSlider = await Slider.findByIdAndUpdate(
+		id,
+		{ sliderImg: sliderImgObj.url },
+		{ new: true }  // Return the updated document
+	);
+
+	if (!updatedSlider) {
+		throw new ApiError(404, "Slider image not found");
+	}
+
+	// Return success response with the updated slider details
+	return res.status(200).json(
+		new ApiResponse(200, updatedSlider, 'Slider image updated successfully')
+	);
+});
+
+const getSliderImages = asyncHandler(async (req, res) => {
+	const sliderImages = await Slider.find().select('sliderImg');
+
+	// Return all slider images
+	return res.status(200).json(
+		new ApiResponse(200, sliderImages, 'Slider images retrieved successfully')
+	);
+});
+
+
+const deleteSliderImage = asyncHandler(async (req, res) => {
+	const { id } = req.body;  // Taking ID from the request body
+
+	// Check if ID is provided
+	if (!id) {
+		throw new ApiError(400, "Slider ID is required");
+	}
+
+	// Find and delete the slider image from the database
+	const deletedSlider = await Slider.findByIdAndDelete(id);
+
+	if (!deletedSlider) {
+		throw new ApiError(404, "Slider image not found");
+	}
+
+	// Optionally, delete the image from Cloudinary as well
+	// await deleteFromCloudinary(deletedSlider.imageUrl);
+
+	// Return success response
+	return res.status(200).json(
+		new ApiResponse(200, {}, 'Slider image deleted successfully')
+	);
+});
+
+
+
 /**
  * @desc Get all user records
  * @route GET /api/admin/users
  * @access Public
  */
+
+
+// Add Plan
+const addPlan = asyncHandler(async (req, res) => {
+	const { title, commission, price } = req.body;
+	const imagePath = req.files?.planImg?.[0]?.path;
+
+	if (!title || !commission || !price) {
+		throw new ApiError(400, "All fields are required");
+	}
+
+	if (!imagePath) {
+		throw new ApiError(400, "Image is required");
+	}
+
+	// Upload image to Cloudinary
+	const imageObj = await uploadOnCloudinary(imagePath);
+	if (!imageObj.url) {
+		throw new ApiError(400, "Error while uploading image");
+	}
+
+	const plan = await Plan.create({
+		title,
+		commission,
+		price,
+		planImg: imageObj.url
+	});
+
+	return res.status(200).json(new ApiResponse(200, plan, 'Plan added successfully'));
+});
+
+// Update Plan
+const updatePlan = asyncHandler(async (req, res) => {
+	const { plan_id: planId, title, commission, price } = req.body;
+	const imagePath = req.files?.planImg?.[0]?.path;
+
+	if (!planId) {
+		throw new ApiError(400, "Plan ID is required");
+	}
+
+	if (!title || !commission || !price) {
+		throw new ApiError(400, "All fields are required");
+	}
+
+	const plan = await Plan.findById(planId);
+	if (!plan) {
+		throw new ApiError(404, "Plan not found");
+	}
+
+	// Upload new image if provided
+	if (imagePath) {
+		const imageObj = await uploadOnCloudinary(imagePath);
+		if (!imageObj.url) {
+			throw new ApiError(400, "Error while uploading image");
+		}
+		plan.planImg = imageObj.url;
+	}
+
+	// Update the rest of the fields
+	plan.title = title;
+	plan.commission = commission;
+	plan.price = price;
+
+	await plan.save();
+
+	return res.status(200).json(new ApiResponse(200, plan, 'Plan updated successfully'));
+});
+
+// Delete Plan
+const deletePlan = asyncHandler(async (req, res) => {
+	const { plan_id: planId } = req.body;
+
+	if (!planId) {
+		throw new ApiError(400, "Plan ID is required");
+	}
+
+	const plan = await Plan.findByIdAndDelete(planId);
+	if (!plan) {
+		throw new ApiError(404, "Plan not found");
+	}
+
+	return res.status(200).json(new ApiResponse(200, plan, 'Plan deleted successfully'));
+});
+
+// Get All Plans
+const getPlans = asyncHandler(async (req, res) => {
+	const plans = await Plan.find();
+
+	if (!plans) {
+		throw new ApiError(404, "No plans found");
+	}
+
+	return res.status(200).json(new ApiResponse(200, plans, "Plans fetched successfully"));
+});
+
+
+
+// Send message as admin
+const sendAdminMessage = asyncHandler(async (req, res) => {
+	const { content } = req.body;
+	const senderId = req.params.id; // Admin ID passed in route
+
+	// Handling image upload
+	const image = req.files?.chatImg?.[0]?.path;
+	let imageUrl = '';
+	if (image) {
+		const imageObj = await uploadOnCloudinary(image);
+		imageUrl = imageObj.url;
+	}
+
+	const message = await Message.create({
+		content,
+		imageUrl,
+		sender: senderId,
+		isAdmin: true,
+	});
+
+	return res.status(200).json({ message, message: 'Admin message sent successfully' });
+});
+
+
+// Get messages for the admin
+const getAdminMessages = asyncHandler(async (req, res) => {
+	const messages = await Message.find({ sender: req.params.id, isAdmin: true });
+
+	return res.status(200).json(messages);
+});
+
+// Delete admin message
+const deleteAdminMessage = asyncHandler(async (req, res) => {
+	const { messageId } = req.body;
+
+	await Message.findByIdAndDelete(messageId);
+
+	return res.status(200).json({ message: 'Message deleted successfully' });
+});
+
+
+//all user withdrawal request 
+const getAllUserWithdrawalsForAdmin = asyncHandler(async (req, res) => {
+	try {
+		// Fetch all withdrawal requests from the database
+		const withdrawals = await withdrawalRequestAmount.find();
+
+		// Check if there are any withdrawal requests
+		if (!withdrawals || withdrawals.length === 0) {
+			return res.status(404).json(new ApiResponse(404, [], 'No withdrawal requests found'));
+		}
+
+		// Send success response with the list of withdrawal requests
+		return res.status(200).json(new ApiResponse(200, withdrawals, 'Withdrawal requests retrieved successfully'));
+	} catch (error) {
+		// Handle errors
+		return res.status(500).json(new ApiResponse(500, null, 'Server error'));
+	}
+});
+
+const updateWithdrawalStatusByAdmin = asyncHandler(async (req, res) => {
+	const { id, status } = req.body; // Get the withdrawal request ID and status from the request body
+
+	// Validate fields
+	if (!id) {
+		throw new ApiError(400, 'Withdrawal request ID is required');
+	}
+	if (!status) {
+		throw new ApiError(400, 'Status is required');
+	}
+
+	// Only allow 'Rejected' or 'Cancelled by Admin' status for admin
+	if (status !== 'Approved' && status !== 'Cancelled by Admin') {
+		throw new ApiError(400, 'Invalid status value. Status must be either "Rejected" or "Cancelled by Admin"');
+	}
+
+	// Find the withdrawal request by ID and update the status
+	const withdrawalRequest = await withdrawalRequestAmount.findByIdAndUpdate(
+		id,
+		{ status },
+		{ new: true } // Return the updated document
+	);
+
+	if (!withdrawalRequest) {
+		throw new ApiError(404, 'Withdrawal request not found');
+	}
+
+	// Send success response with the updated withdrawal request
+	return res.status(200).json(new ApiResponse(200, withdrawalRequest, `Withdrawal request ${status} successfully`));
+});
+
+//add country code 
+const addCountry = asyncHandler(async (req, res) => {
+	const { countryName, countryCode } = req.body;
+
+	// Validate required fields
+	if (!countryName || !countryCode) {
+		return res.status(400).json({ message: 'Both countryName and countryCode are required' });
+	}
+
+	// Check if country code already exists
+	const existingCountry = await Country.findOne({ countryCode });
+	if (existingCountry) {
+		return res.status(400).json({ message: 'Country with this code already exists' });
+	}
+
+	// Create new country
+	const country = await Country.create({ countryName, countryCode });
+	return res.status(201).json({ message: 'Country added successfully', country });
+});
+
+//get  country code 
+
+const getCountries = asyncHandler(async (req, res) => {
+	const countries = await Country.find();
+	if (!countries.length) {
+		return res.status(404).json({ message: 'No countries found' });
+	}
+
+	return res.status(200).json({ countries });
+});
+
+//update country code 
+const updateCountry = asyncHandler(async (req, res) => {
+	const { countryId, countryName, countryCode } = req.body;
+
+	if (!countryId) {
+		return res.status(400).json({ message: 'Country ID is required' });
+	}
+
+	// Find country by ID and update
+	const updatedCountry = await Country.findByIdAndUpdate(
+		countryId,
+		{ countryName, countryCode },
+		{ new: true }
+	);
+
+	if (!updatedCountry) {
+		return res.status(404).json({ message: 'Country not found' });
+	}
+
+	return res.status(200).json({ message: 'Country updated successfully', updatedCountry });
+});
+
+//delete country code 
+const deleteCountry = asyncHandler(async (req, res) => {
+	const { countryId } = req.body;
+
+	if (!countryId) {
+		return res.status(400).json({ message: 'Country ID is required' });
+	}
+
+	// Find and delete country
+	const deletedCountry = await Country.findByIdAndDelete(countryId);
+
+	if (!deletedCountry) {
+		return res.status(404).json({ message: 'Country not found' });
+	}
+
+	return res.status(200).json({ message: 'Country deleted successfully', deletedCountry });
+});
+
 const getUserRecords = asyncHandler(async (req, res) => {
 	// Fetch all user records from the database
 	const userRecords = await User.find();
@@ -335,5 +699,26 @@ export {
 	updateEvent,
 	deleteEventRecord,
 	adminLogin,
-	registerAdmin
+	registerAdmin,
+
+
+	updateProduct,
+	deleteProduct,
+	uploadSliderImage,
+	getSliderImages,
+	updateSliderImage,
+	deleteSliderImage,
+	addPlan,
+	updatePlan,
+	deletePlan,
+	getPlans,
+	getAllUserWithdrawalsForAdmin,
+	updateWithdrawalStatusByAdmin,
+	addCountry,
+	getCountries,
+	updateCountry,
+	deleteCountry,
+	sendAdminMessage,
+	getAdminMessages,
+	deleteAdminMessage,
 };

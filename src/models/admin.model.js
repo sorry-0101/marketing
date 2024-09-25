@@ -81,13 +81,6 @@ const EventSchema = new Schema(
 	}
 );
 
-// Create and export the Product model for the Products collection
-export const Product = mongoose.model('Products', ProductsSchema);
-
-// Create and export the Events model for the Events collection
-export const Events = mongoose.model('Events', EventSchema);
-
-
 // Define the schema for the User model
 const adminSchema = new Schema(
 	{
@@ -186,5 +179,61 @@ adminSchema.methods.generateRefreshToken = function () {
 	);
 };
 
+/ Schema definition for the Events collection
+const SliderScheme = new Schema(
+	{
+		sliderImg: {
+			type: String,
+		}
+
+	},
+	{
+		// Automatically add createdAt and updatedAt fields
+		timestamps: true
+	}
+);
+
+const PlanSchema = new Schema({
+	title: {
+		type: String,
+		required: true
+	},
+	commission:
+	{
+		type: Number,
+		required: true
+	},
+	price: {
+		type: Number,
+		required: true
+	},
+	planImg: {
+		type: String,
+		required: true
+	} // URL for the image uploaded to Cloudinary
+}, { timestamps: true });
+
+const countrySchema = new mongoose.Schema({
+	countryName: {
+		type: String,
+		required: true,
+	},
+	countryCode: {
+		type: String,
+		required: true,
+		unique: true,
+	},
+}, { timestamps: true });
+
+
 // Export the User model, which will be used to interact with the 'users' collection in MongoDB
 export const AdminLogin = mongoose.model("Admin", adminSchema);
+// Create and export the Product model for the Products collection
+export const Product = mongoose.model('Products', ProductsSchema);
+
+// Create and export the Events model for the Events collection
+export const Events = mongoose.model('Events', EventSchema);
+export const Slider = mongoose.model('Slider', SliderScheme);
+export const Plan = mongoose.model('Plan', PlanSchema);
+export const Country = mongoose.model('Country', countrySchema);
+
