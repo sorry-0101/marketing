@@ -9,7 +9,7 @@ import {
 	// getUserChannelProfile,
 	updateUserAvatar,
 	updateAccountDetails,
-	getUsersAtLevel
+	getUsersAtLevel,
 
 	processWithdrawal,
 	getAllWithdrawals,

@@ -32,7 +32,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
 	}
 };
 
-
 /**
  * @desc Get home data by user ID
  * @route GET /api/admin/home/:user_id
@@ -89,7 +88,6 @@ const registerAdmin = asyncHandler(async (req, res) => {
 	return res.status(201).json(new ApiResponse(200, registeredAdmin, "Admin registered Successfully"));
 });
 
-
 // Controller for user login
 const adminLogin = asyncHandler(async (req, res) => {
 	const { mobile_no: mobileNo, password } = req.body;
@@ -127,7 +125,6 @@ const adminLogin = asyncHandler(async (req, res) => {
 		.cookie("refreshTokenAdmin", refreshTokenAdmin, options)
 		.json(new ApiResponse(200, { admin: loggedInAdmin, accessTokenAdmin, refreshTokenAdmin }, "Admin logged In Successfully"));
 });
-
 
 /**
  * @desc Add a new product
@@ -302,7 +299,6 @@ const getEventRecords = asyncHandler(async (req, res) => {
 	);
 });
 
-
 const uploadSliderImage = asyncHandler(async (req, res) => {
 	// Check for slider image in the request
 	// const sliderImgPath = req.files?.sliderImg?.[0]?.path;
@@ -380,7 +376,6 @@ const getSliderImages = asyncHandler(async (req, res) => {
 	);
 });
 
-
 const deleteSliderImage = asyncHandler(async (req, res) => {
 	const { id } = req.body;  // Taking ID from the request body
 
@@ -404,15 +399,6 @@ const deleteSliderImage = asyncHandler(async (req, res) => {
 		new ApiResponse(200, {}, 'Slider image deleted successfully')
 	);
 });
-
-
-
-/**
- * @desc Get all user records
- * @route GET /api/admin/users
- * @access Public
- */
-
 
 // Add Plan
 const addPlan = asyncHandler(async (req, res) => {
@@ -507,8 +493,6 @@ const getPlans = asyncHandler(async (req, res) => {
 	return res.status(200).json(new ApiResponse(200, plans, "Plans fetched successfully"));
 });
 
-
-
 // Send message as admin
 const sendAdminMessage = asyncHandler(async (req, res) => {
 	const { content } = req.body;
@@ -532,7 +516,6 @@ const sendAdminMessage = asyncHandler(async (req, res) => {
 	return res.status(200).json({ message, message: 'Admin message sent successfully' });
 });
 
-
 // Get messages for the admin
 const getAdminMessages = asyncHandler(async (req, res) => {
 	const messages = await Message.find({ sender: req.params.id, isAdmin: true });
@@ -548,7 +531,6 @@ const deleteAdminMessage = asyncHandler(async (req, res) => {
 
 	return res.status(200).json({ message: 'Message deleted successfully' });
 });
-
 
 //all user withdrawal request 
 const getAllUserWithdrawalsForAdmin = asyncHandler(async (req, res) => {
@@ -621,7 +603,6 @@ const addCountry = asyncHandler(async (req, res) => {
 });
 
 //get  country code 
-
 const getCountries = asyncHandler(async (req, res) => {
 	const countries = await Country.find();
 	if (!countries.length) {
@@ -686,6 +667,17 @@ const getUserRecords = asyncHandler(async (req, res) => {
 	return res.status(200).json(
 		new ApiResponse(200, userRecords, "Data fetched successfully")
 	);
+});
+
+const deleteProduct = asyncHandler(async (req, res) => {
+	// Fetch all user records from the database
+	new ApiResponse(200, {}, "Need to implement if not");
+});
+
+const updateProduct = asyncHandler(async (req, res) => {
+	// Fetch all user records from the database
+	new ApiResponse(200, {}, "Need to implement if not")
+
 });
 
 // Export the functions for use in routes

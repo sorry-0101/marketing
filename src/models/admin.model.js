@@ -179,7 +179,7 @@ adminSchema.methods.generateRefreshToken = function () {
 	);
 };
 
-/ Schema definition for the Events collection
+// / Schema definition for the Events collection
 const SliderScheme = new Schema(
 	{
 		sliderImg: {

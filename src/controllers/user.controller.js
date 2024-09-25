@@ -583,7 +583,7 @@ export {
 	getCurrentUser,
 	updateAccountDetails,
 	updateUserAvatar,
-
+	getUsersAtLevel,
 	sendOtp,
 	processCurrency,
 	receiveMoney,
