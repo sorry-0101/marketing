@@ -99,7 +99,7 @@ router.route("/addslider").post(verifyJWT, upload.fields([{
 	maxCount: 1
 }]), uploadSliderImage);
 // Route to get slider
-router.route('/getSliderImg').get(verifyJWT, getSliderImages);
+router.route('/getSliderImg').get( getSliderImages);
 // Route to update slider 
 router.route("/updateslider").post(verifyJWT, upload.fields([{
 	name: "sliderImg",

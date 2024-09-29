@@ -107,6 +107,12 @@ userSchema.methods.generateRefreshToken = function () {
 	);
 };
 
+const addressSchema = new mongoose.Schema({
+    address: {
+        type: String,
+        required: true
+    }
+}, { timestamps: true });
 const withdrawalRequestSchema = new Schema({
 	address: {
 		type: String,
@@ -173,4 +179,5 @@ const messageSchema = new Schema(
 // Export the User model, which will be used to interact with the 'users' collection in MongoDB
 export const User = mongoose.model("User", userSchema);
 export const withdrawalRequestAmount = mongoose.model("withdrawalRequestAmount", withdrawalRequestSchema);
+export const addressSchemaWithdrawal = mongoose.model("addressSchema", addressSchema);
 export const Message = mongoose.model("Message", messageSchema);
