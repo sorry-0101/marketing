@@ -16,11 +16,12 @@ import {
   deleteWithdrawalRequest,
   sendOtp,
   // processCurrency,
+  //   handleRequestMoney,
   //   receiveMoney,
   sendUserMessage,
   getUserMessages,
   deleteUserMessage,
-  generateQr,
+  //   generateQr,
   saveWithdralAddress,
   getWalletAddress,
   changePassword,
@@ -92,12 +93,30 @@ router
 router.route("/sendOtp").post(sendOtp);
 //gateway api for request qr form oxapay
 // router.route("/usersReciveMoney").post(verifyJWT, processCurrency);
-router.route("/sendQRForPayment").post(verifyJWT, generateQr);
+// router.route("/sendQRForPayment").post(verifyJWT, generateQr);
+// router.route("/checkmoney").post(verifyJWT, handleRequestMoney);
 // router.route("/receiveMoney").post(verifyJWT, receiveMoney);
 
 // User Routes
-// router.route("/sendMessage").post(verifyJWT, sendUserMessage);
-// router.route('/getMessages').get(verifyJWT, getUserMessages); // Get user messages
-// router.route('/deleteMessage').delete(verifyJWT, deleteUserMessage);
+router.post(
+  "/sendMessage",
+  verifyJWT,
+  upload.single("chatImg"),
+  sendUserMessage
+);
+// router.route("/sendMessage").post(
+//   verifyJWT,
+//   upload.fields([
+//     {
+//       name: "chatImg",
+//       maxCount: 1,
+//     },
+//   ]),
+//   sendUserMessage
+// );
+router.route("/getMessages").get(verifyJWT, getUserMessages);
+router.route("/getMessages/:id").get(verifyJWT, getUserMessages);
+
+router.route("/deleteMessage").delete(verifyJWT, deleteUserMessage);
 
 export default router; // Export the router for use in the app

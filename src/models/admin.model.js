@@ -209,7 +209,15 @@ const PlanSchema = new Schema(
     planImg: {
       type: String,
       required: true,
-    }, // URL for the image uploaded to Cloudinary
+    },
+    grabNo: {
+      type: String,
+      required: true,
+    },
+    shareCount: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );

@@ -343,33 +343,24 @@ const sendOtp = asyncHandler(async (req, res) => {
     if (!mobileNo) {
       throw new ApiError(400, "Mobile number is required");
     }
-
     // Find user by mobile number
     const user = await User.findOne({ mobileNo });
     if (!user) {
       throw new ApiError(404, "Mobile number does not exist");
     }
-
     // Generate a random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
-
     // Prepare the SMS message
-    // const smsMessage = encodeURIComponent(`${otp} is your OTP for account verification, valid for the next 10 minutes. Esotericit`);
     let smsMessage = `${otp} is your otp for your account verification valid for the next 10 minutes. Esotericit`;
     smsMessage = encodeURIComponent(smsMessage).replace(/%20/g, "+");
-    // console.log("smsMessage",smsMessage);
-
     const smsUrl = `http://osd7.in/V2/http-api.php?apikey=${process.env.AUTHKEY}&number=${mobileNo}&message=${smsMessage}&senderid=${process.env.SENDERID}&format=json`;
-    // console.log(smsMessage);
-    // console.log("dsds", smsUrl)
+
     await axios.get(smsUrl);
     // Update the user with the OTP and validity time (10 minutes)
     const otpValidity = new Date(new Date().getTime() + 10 * 60000); // 10 minutes validity
     user.otp = otp;
     user.otp_validity = otpValidity;
     await user.save();
-    // console.log("resfd", respsms);
-    // Return success response with the OTP (for testing purposes; in production, remove OTP from the response)
     return res
       .status(200)
       .json(
@@ -412,148 +403,6 @@ const getUsersAtLevel = asyncHandler(
   }
 );
 
-const generateQr = asyncHandler(async (req, res) => {
-  const { currencyName, email, amount, mobileNo, blockchain } = req.body;
-
-  // Validate required fields
-  if (!currencyName) {
-    throw new ApiError(
-      400,
-      "currencyName is required (currencyName and blockchain)"
-    );
-  }
-  if (!email) {
-    throw new ApiError(400, "Email is required");
-  }
-  if (!amount) {
-    throw new ApiError(400, "Amount is required");
-  }
-  if (!mobileNo) {
-    throw new ApiError(400, "Phone is required");
-  }
-  if (!blockchain) {
-    throw new ApiError(400, "Phone is required");
-  }
-
-  try {
-    // Prepare the request to OxaPay API
-    const response = await axios.post(
-      "https://api.oxapay.com/merchants/request/whitelabel",
-      {
-        merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-        currency: currencyName,
-        payCurrency: currencyName,
-        amount: amount,
-        email: email,
-        description: mobileNo,
-        network: blockchain,
-      }
-    );
-
-    // Handle the API response
-    if (response.data.result === 100) {
-      // handleRequestMoney(response);
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(200, response.data, "Payment request successful")
-        );
-    } else {
-      throw new ApiError(400, `API Error: ${response.data.message}`);
-    }
-  } catch (error) {
-    // Handle any errors
-    console.error("API Error:", error);
-    throw new ApiError(500, "Something went wrong with the payment request");
-  }
-});
-
-const receiveMoney = asyncHandler(async (req, res) => {
-  const { currencyName, email, amount, mobileNo, blockchain } = req.body;
-
-  // Validate required fields
-  if (!currencyName) {
-    throw new ApiError(
-      400,
-      "currencyName is required (currencyName and blockchain)"
-    );
-  }
-  if (!email) {
-    throw new ApiError(400, "Email is required");
-  }
-  if (!amount) {
-    throw new ApiError(400, "Amount is required");
-  }
-  if (!mobileNo) {
-    throw new ApiError(400, "Phone is required");
-  }
-  if (!blockchain) {
-    throw new ApiError(400, "Phone is required");
-  }
-
-  try {
-    // Prepare the request to OxaPay API
-    const response = await axios.post(
-      "https://api.oxapay.com/merchants/request/whitelabel",
-      {
-        merchant: "NCV36N-GTMR3L-6XHTHD-62W176", // Replace with actual merchant code
-        currency: currencyName,
-        payCurrency: currencyName,
-        amount: amount,
-        email: email,
-        description: mobileNo,
-        network: blockchain,
-      }
-    );
-
-    // Handle the API response
-    if (response.data.result === 100) {
-      handleRequestMoney(response);
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(200, response.data, "Payment request successful")
-        );
-    } else {
-      throw new ApiError(400, `API Error: ${response.data.message}`);
-    }
-  } catch (error) {
-    // Handle any errors
-    console.error("API Error:", error);
-    throw new ApiError(500, "Something went wrong with the payment request");
-  }
-});
-
-const handleRequestMoney = async (event) => {
-  try {
-    const response = await axios.post(
-      "https://api.oxapay.com/merchants/inquiry",
-      {
-        merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-        trackId: trackId,
-        // "trackId": "26186222"
-      }
-    );
-
-    if (response.data.result === 100) {
-      // console.log("fdasdfa hhandleRequest ", response.data);
-      const status = response.data.status;
-      if (status === "Paid" && !sendToSecondAPICalled) {
-        const amount = response.data.payAmount;
-
-        setTransactionMessage("Transaction is successful. Status: Paid");
-      } else if (status === "Waiting") {
-        setTransactionMessage("Transaction is not successful. Status: Waiting");
-      }
-    } else {
-      console.log("API Error:", response.data.message);
-      // Handle other cases here
-    }
-  } catch (error) {
-    console.error("API Error:", error);
-  }
-};
-
 // Process Withdrawal Request
 const saveWithdralAddress = asyncHandler(async (req, res) => {
   const { address } = req.body;
@@ -563,13 +412,6 @@ const saveWithdralAddress = asyncHandler(async (req, res) => {
     address: "Wallet address is required",
   };
 
-  // Validate fields
-  // for (const [field, errorMessage] of Object.entries(requiredFields)) {
-  // 	if (!eval(field)) {
-  // 		throw new ApiError(400, errorMessage);
-  // 	}
-  // }
-  // Create a new withdrawal request
   const withdrawalRequest = await addressSchemaWithdrawal.create({ address });
 
   // Send success response
@@ -747,31 +589,44 @@ const getUsersLevel = async (userId, level = 1, maxLevel = 5) => {
 // Send message as user (token is used to identify user)
 const sendUserMessage = asyncHandler(async (req, res) => {
   const { content } = req.body;
-  const senderId = req.user.id; // User ID from token
+  const senderId = req.user.id;
 
   // Handling image upload
-  const image = req.files?.chatImg?.[0]?.path;
-  let imageUrl = "";
-  if (image) {
-    const imageObj = await uploadOnCloudinary(image);
-    imageUrl = imageObj.url;
+  const imageMesg = req.file?.path;
+  console.log("imageMesg", imageMesg);
+  let imageObj = {};
+  if (imageMesg) {
+    imageObj = await uploadOnCloudinary(imageMesg);
   }
 
   const message = await Message.create({
     content,
-    imageUrl,
     sender: senderId,
     isAdmin: false,
+    chatImg: imageObj.url || null, // If no image, set to null
   });
 
+  const addedMessage = await Message.findById(message._id).select();
   return res
     .status(200)
-    .json({ message, message: "Message sent successfully" });
+    .json(new ApiResponse(200, addedMessage, "Message sent successfully"));
 });
 
 // Get messages for the user
+// const getUserMessages = asyncHandler(async (req, res) => {
+//   const messages = await Message.find({ sender: req.user.id, isAdmin: false });
+
+//   return res.status(200).json(messages);
+// });
+
+// Get messages for the user
 const getUserMessages = asyncHandler(async (req, res) => {
-  const messages = await Message.find({ sender: req.user.id, isAdmin: false });
+  const messages = await Message.find({
+    $or: [
+      { sender: req.user.id, isAdmin: false }, // User's own messages
+      { sender: req.params.id, isAdmin: true }, // Admin messages
+    ],
+  });
 
   return res.status(200).json(messages);
 });
@@ -796,9 +651,6 @@ export {
   updateUserAvatar,
   getUsersAtLevel,
   sendOtp,
-  generateQr,
-  // processCurrency,
-  //   receiveMoney,
   saveWithdralAddress,
   getWalletAddress,
   processWithdrawal,
@@ -810,3 +662,176 @@ export {
   deleteUserMessage,
   changePassword,
 };
+
+// const generateQr = asyncHandler(async (req, res) => {
+//   const { currencyName, email, amount, mobileNo, blockchain } = req.body;
+
+//   // Validate required fields
+//   if (!currencyName) {
+//     throw new ApiError(
+//       400,
+//       "currencyName is required (currencyName and blockchain)"
+//     );
+//   }
+//   if (!email) {
+//     throw new ApiError(400, "Email is required");
+//   }
+//   if (!amount) {
+//     throw new ApiError(400, "Amount is required");
+//   }
+//   if (!mobileNo) {
+//     throw new ApiError(400, "Phone is required");
+//   }
+//   if (!blockchain) {
+//     throw new ApiError(400, "Phone is required");
+//   }
+
+//   try {
+//     // Prepare the request to OxaPay API
+//     const response = await axios.post(
+//       "https://api.oxapay.com/merchants/request/whitelabel",
+//       {
+//         merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+//         currency: currencyName,
+//         payCurrency: currencyName,
+//         amount: amount,
+//         email: email,
+//         description: mobileNo,
+//         network: blockchain,
+//       }
+//     );
+
+//     // Handle the API response
+//     if (response.data.result === 100) {
+//       // handleRequestMoney(response);
+//       return res
+//         .status(200)
+//         .json(
+//           new ApiResponse(200, response.data, "Payment request successful")
+//         );
+//     } else {
+//       throw new ApiError(400, `API Error: ${response.data.message}`);
+//     }
+//   } catch (error) {
+//     // Handle any errors
+//     console.error("API Error:", error);
+//     throw new ApiError(500, "Something went wrong with the payment request");
+//   }
+// });
+
+// const generateQr = asyncHandler(async (req, res) => {
+//   const { currencyName, email, amount, mobileNo, blockchain } = req.body;
+
+//   // Validate required fields
+//   if (!currencyName) {
+//     throw new ApiError(
+//       400,
+//       "currencyName is required (currencyName and blockchain)"
+//     );
+//   }
+//   if (!email) {
+//     throw new ApiError(400, "Email is required");
+//   }
+//   if (!amount) {
+//     throw new ApiError(400, "Amount is required");
+//   }
+//   if (!mobileNo) {
+//     throw new ApiError(400, "Phone is required");
+//   }
+//   if (!blockchain) {
+//     throw new ApiError(400, "Blockchain is required");
+//   }
+
+//   try {
+//     // Prepare the request to OxaPay API
+//     const response = await axios.post(
+//       "https://api.oxapay.com/merchants/request/whitelabel",
+//       {
+//         merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+//         currency: currencyName,
+//         payCurrency: currencyName,
+//         amount: amount,
+//         email: email,
+//         description: mobileNo,
+//         network: blockchain,
+//       }
+//     );
+
+//     // Handle the API response
+//     if (response.data.result === 100) {
+//       const trackId = response.data.trackId;
+
+//       // Respond with the initial response from OxaPay
+//       res
+//         .status(200)
+//         .json(
+//           new ApiResponse(200, response.data, "Payment request successful")
+//         );
+
+//       // Call handleRequestMoney in the background
+//       handleRequestMoney({ body: { trackId } }).catch((error) => {
+//         console.error("Error handling request money:", error.message);
+//       });
+//     } else {
+//       throw new ApiError(400, `API Error: ${response.data.message}`);
+//     }
+//   } catch (error) {
+//     console.error("API Error:", error);
+//     throw new ApiError(500, "Something went wrong with the payment request");
+//   }
+// });
+
+// const handleRequestMoney = asyncHandler(async (req, res) => {
+//   const { trackId } = req.body; // Get trackId from the request body
+
+//   if (!trackId) {
+//     return res.status(400).json({ message: "trackId is required" });
+//   }
+//   console.log("trackId.", trackId);
+//   try {
+//     // Make the POST request to the external API
+//     const response = await axios.post(
+//       "https://api.oxapay.com/merchants/inquiry",
+//       {
+//         merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+//         trackId: trackId,
+//       }
+//     );
+
+//     console.log("response.data.", response.data);
+//     // Check if the response result is 100 (success)
+//     if (response.data.result === 100) {
+//       console.log("response.data.", response.data);
+//       const status = response.data.status;
+//       const amount = response.data.payAmount;
+
+//       // Handle different status responses
+//       if (status === "Paid") {
+//         // Successful payment
+//         return res.status(200).json({
+//           message: "Transaction is successful.",
+//           status: "Paid",
+//           amount: amount,
+//         });
+//       } else if (status === "Waiting") {
+//         // Payment is waiting
+//         return res.status(200).json({
+//           message: "Transaction is not successful. Status: Waiting.",
+//           status: "Waiting",
+//         });
+//       }
+//     } else {
+//       // Handle API errors
+//       return res.status(500).json({
+//         message: `API Error: ${response.data.message}`,
+//       });
+//     }
+//   } catch (error) {
+//     // Handle errors
+//     console.error("API Error:", error.message);
+//     return res.status(500).json({
+//       message: "Internal Server Error",
+//       error: error.message,
+//     });
+//   }
+// });

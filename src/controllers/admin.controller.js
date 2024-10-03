@@ -169,17 +169,20 @@ const adminLogin = asyncHandler(async (req, res) => {
  * @route POST /api/admin/product
  * @access Public
  */
+
 const addProduct = asyncHandler(async (req, res) => {
   const {
     product_name: productName,
-    level,
+    // level,
     ratio_between: ratioBetween,
     price,
+    plan_id: planId, // Add plan_id here
+    plan_name: planName, // Add plan_name here
   } = req.body;
 
   // Validate required fields
   if (
-    [productName, level, ratioBetween].some(
+    [productName, ratioBetween, planId, planName].some(
       (field) => typeof field === "string" && field.trim() === ""
     )
   ) {
@@ -203,9 +206,11 @@ const addProduct = asyncHandler(async (req, res) => {
   // Create new product in the database
   const product = await Product.create({
     productName,
-    level,
+    // level,
     ratioBetween,
     price,
+    planId, // Include planId
+    planName, // Include planName
     productImg: productImgObj.url,
   });
   const addedProduct = await Product.findById(product._id).select();
@@ -215,6 +220,53 @@ const addProduct = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, addedProduct, "Product added successfully"));
 });
+
+// const addProduct = asyncHandler(async (req, res) => {
+//   const {
+//     product_name: productName,
+//     level,
+//     ratio_between: ratioBetween,
+//     price,
+//   } = req.body;
+
+//   // Validate required fields
+//   if (
+//     [productName, level, ratioBetween].some(
+//       (field) => typeof field === "string" && field.trim() === ""
+//     )
+//   ) {
+//     return res.status(400).json(400, {}, "All fields are required");
+//   }
+
+//   // Check for product image in the request
+//   const productImgPath = req.files?.productImg?.[0]?.path;
+
+//   if (!productImgPath) {
+//     throw new ApiError(400, "Product Image is required");
+//   }
+
+//   // Upload product image to Cloudinary
+//   const productImgObj = await uploadOnCloudinary(productImgPath);
+
+//   if (!productImgObj) {
+//     throw new ApiError(400, "Avatar file is required");
+//   }
+
+//   // Create new product in the database
+//   const product = await Product.create({
+//     productName,
+//     level,
+//     ratioBetween,
+//     price,
+//     productImg: productImgObj.url,
+//   });
+//   const addedProduct = await Product.findById(product._id).select();
+
+//   // Return success response with the added product
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, addedProduct, "Product added successfully"));
+// });
 
 /**
  * @desc Add a new event
@@ -394,10 +446,8 @@ const getEventRecords = asyncHandler(async (req, res) => {
 });
 
 const uploadSliderImage = asyncHandler(async (req, res) => {
-  // Check for slider image in the request
-  // const sliderImgPath = req.files?.sliderImg?.[0]?.path;
   const sliderImgPath = req.files?.sliderImg?.[0]?.path;
-  console.log("sliderImgPath", sliderImgPath);
+  //   console.log("sliderImgPath", sliderImgPath);
 
   // Validate that an image has been uploaded
   if (!sliderImgPath) {
@@ -489,9 +539,6 @@ const deleteSliderImage = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Slider image not found");
   }
 
-  // Optionally, delete the image from Cloudinary as well
-  // await deleteFromCloudinary(deletedSlider.imageUrl);
-
   // Return success response
   return res
     .status(200)
@@ -500,10 +547,10 @@ const deleteSliderImage = asyncHandler(async (req, res) => {
 
 // Add Plan
 const addPlan = asyncHandler(async (req, res) => {
-  const { title, commission, price } = req.body;
+  const { title, commission, price, grabNo, shareCount } = req.body;
   const imagePath = req.files?.planImg?.[0]?.path;
 
-  if (!title || !commission || !price) {
+  if (!title || !commission || !price || !grabNo || !shareCount) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -521,6 +568,8 @@ const addPlan = asyncHandler(async (req, res) => {
     title,
     commission,
     price,
+    grabNo,
+    shareCount,
     planImg: imageObj.url,
   });
 
@@ -531,14 +580,21 @@ const addPlan = asyncHandler(async (req, res) => {
 
 // Update Plan
 const updatePlan = asyncHandler(async (req, res) => {
-  const { plan_id: planId, title, commission, price } = req.body;
+  const {
+    plan_id: planId,
+    title,
+    commission,
+    price,
+    grabNo,
+    shareCount,
+  } = req.body;
   const imagePath = req.files?.planImg?.[0]?.path;
 
   if (!planId) {
     throw new ApiError(400, "Plan ID is required");
   }
 
-  if (!title || !commission || !price) {
+  if (!title || !commission || !price || !grabNo || !shareCount) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -560,6 +616,8 @@ const updatePlan = asyncHandler(async (req, res) => {
   plan.title = title;
   plan.commission = commission;
   plan.price = price;
+  plan.grabNo = grabNo;
+  plan.shareCount = shareCount;
 
   await plan.save();
 
@@ -605,28 +663,35 @@ const sendAdminMessage = asyncHandler(async (req, res) => {
   const senderId = req.params.id; // Admin ID passed in route
 
   // Handling image upload
-  const image = req.files?.chatImg?.[0]?.path;
-  let imageUrl = "";
-  if (image) {
-    const imageObj = await uploadOnCloudinary(image);
-    imageUrl = imageObj.url;
+  const imageMesg = req.files?.chatImg?.[0]?.path;
+  //   let imageUrl = "";
+  let imageObj = {};
+  if (imageMesg) {
+    imageObj = await uploadOnCloudinary(imageMesg);
   }
 
   const message = await Message.create({
     content,
-    imageUrl,
+    chatImg: imageObj.url || null,
     sender: senderId,
     isAdmin: true,
   });
 
+  const addedMessage = await Message.findById(message._id).select();
   return res
     .status(200)
-    .json({ message, message: "Admin message sent successfully" });
+    .json(new ApiResponse(200, addedMessage, "Message sent successfully"));
 });
 
 // Get messages for the admin
 const getAdminMessages = asyncHandler(async (req, res) => {
-  const messages = await Message.find({ sender: req.params.id, isAdmin: true });
+  const userId = req.params.id; // Get the user ID from the params
+  const messages = await Message.find({
+    $or: [
+      { sender: userId, isAdmin: false }, // User messages
+      { sender: req.user.id, isAdmin: true }, // Admin messages
+    ],
+  });
 
   return res.status(200).json(messages);
 });
@@ -814,14 +879,80 @@ const getUserRecords = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, userRecords, "Data fetched successfully"));
 });
 
+//delete country code
 const deleteProduct = asyncHandler(async (req, res) => {
-  // Fetch all user records from the database
-  new ApiResponse(200, {}, "Need to implement if not");
+  const { product_id } = req.body;
+
+  if (!product_id) {
+    return res.status(400).json({ message: "Product ID is required" });
+  }
+
+  // Find and delete country
+  const deleteProduct = await Product.findByIdAndDelete(product_id);
+
+  if (!deleteProduct) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  return res
+    .status(200)
+    .json({ message: "Product deleted successfully", deleteProduct });
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
-  // Fetch all user records from the database
-  new ApiResponse(200, {}, "Need to implement if not");
+  const { product_id: productId } = req.body; // Get product ID from the request body
+
+  const {
+    product_name: productName,
+    // level,
+    ratio_between: ratioBetween,
+    price,
+    plan_id: planId,
+    plan_name: planName,
+  } = req.body;
+
+  // Check if productId is provided
+  if (!productId) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, {}, "Product ID is required"));
+  }
+
+  // Find the product by ID in the database
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    return res.status(404).json(new ApiResponse(404, {}, "Product not found"));
+  }
+
+  // Check if a new product image is provided in the request
+  let productImgUrl = product.productImg; // Keep the existing image URL by default
+  const productImgPath = req.files?.productImg?.[0]?.path;
+
+  if (productImgPath) {
+    // Upload the new image to Cloudinary if provided
+    const productImgObj = await uploadOnCloudinary(productImgPath);
+    if (!productImgObj) {
+      throw new ApiError(400, "Failed to upload product image");
+    }
+    productImgUrl = productImgObj.url; // Update the image URL if a new image is uploaded
+  }
+
+  // Update the product fields
+  product.productName = productName;
+  product.ratioBetween = ratioBetween;
+  product.price = price;
+  product.planId = planId;
+  product.planName = planName;
+  product.productImg = productImgUrl;
+
+  // Save the updated product to the database
+  await product.save();
+
+  // Return the updated product in the response
+  return res
+    .status(200)
+    .json(new ApiResponse(200, product, "Product updated successfully"));
 });
 
 // Export the functions for use in routes
