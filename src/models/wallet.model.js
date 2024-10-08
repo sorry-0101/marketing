@@ -13,5 +13,16 @@ const wallet = new Schema(
 	{ timestamps: true }
 );
 
+const shareCount = new Schema(
+	{
+		userId: {
+			type: String
+		},
+		shareCount: {
+			type: Number
+		}
+	}
+)
+
 
 export const Wallet = mongoose.model("wallet", wallet);
