@@ -218,6 +218,10 @@ const PlanSchema = new Schema(
 			type: String,
 			required: true,
 		},
+		shareLimit: {
+			type: Number,
+			required: true,
+		},
 	},
 	{ timestamps: true }
 );

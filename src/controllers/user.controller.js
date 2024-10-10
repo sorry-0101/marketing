@@ -147,6 +147,8 @@ const loginUser = asyncHandler(async (req, res) => {
 		"-password -refreshToken"
 	);
 
+	req.user = loggedInUser;
+
 	const allWalletDetail = await Wallet.find({});
 	const childUsers = await getUsersLevel(loggedInUser.userId);
 
