@@ -8,6 +8,7 @@ import {
 } from "../models/user.model.js";
 import { Wallet } from "../models/wallet.model.js";
 import { Plan } from "../models/admin.model.js"
+import { ShareCount } from "../models/wallet.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
@@ -103,6 +104,20 @@ const registerUser = asyncHandler(async (req, res) => {
 			throw new ApiError(
 				500,
 				"Something went wrong while registering the user"
+			);
+		}
+
+		if (sharedId) {
+			const shareCount = await ShareCount.findById(sharedId);
+			const totalShareCount = shareCount.totalShareCount + 1
+			ShareCount.findByIdAndUpdate({
+				sharedId,
+				$set: {
+					shareCount: totalShareCount,
+					totalShareCount,
+				},
+			},
+				{ new: true }
 			);
 		}
 

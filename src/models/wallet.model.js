@@ -16,16 +16,25 @@ const wallet = new Schema(
 const shareCount = new Schema(
 	{
 		userId: {
-			type: String
+			type: String,
+			ref: 'User'
 		},
 		shareCount: {
 			type: Number
 		},
 		totalShareCount: {
 			type: Number
-		}
+		},
+		callDate: {
+			type: Date,
+			required: true,
+		},
+		grabCount: {
+			type: Number,
+			default: 0,
+		},
 	}
-)
+);
 
 const WalletTransactionSchema = new Schema(
 	{
