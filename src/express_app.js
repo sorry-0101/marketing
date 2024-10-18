@@ -1,54 +1,58 @@
-'use-strict';
+"use-strict";
 
-import dotenv from 'dotenv';
-import config from 'config';
-import express from 'express';
-import cookieParser from "cookie-parser"
-import cors from 'cors';
+import dotenv from "dotenv";
+import config from "config";
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 // import setupApiService from './utils/setupApiService';
-
 
 // dotenv.config({ path: './.env' });
 
 const app = express();
 
-global.app_config = config.get('app_config');
+global.app_config = config.get("app_config");
 global.logged_in_user = {};
 
 // Body parser, reading data from body into req.body
-app.use(express.json({
-	limit: '100mb'
-}));
+app.use(
+  express.json({
+    limit: "100mb",
+  })
+);
 
 // URL Encoding for req.body
-app.use(express.urlencoded({
-	limit: '100mb',
-	extended: true,
-	parameterLimit: 1000000
-}));
+app.use(
+  express.urlencoded({
+    limit: "100mb",
+    extended: true,
+    parameterLimit: 1000000,
+  })
+);
 
-app.use(cors({
-	origin: process.env.CORS_ORIGIN || '*',
-	credentials: true
-}));
-
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "*",
+    credentials: true,
+  })
+);
 
 // importing routes
-import userRouter from './routes/user.routes.js'
-import adminRouter from './routes/admin.routes.js'
-import walletRoutes from './routes/wallet.routes.js'
+import userRouter from "./routes/user.routes.js";
+import adminRouter from "./routes/admin.routes.js";
+import walletRoutes from "./routes/wallet.routes.js";
+import grabRoutes from "./routes/grab.route.js";
 
 app.use(express.static("public"));
 app.use(cookieParser());
 
 // importing db setup file
-import connectDB from './utils/setupMongoDb.js';
+import connectDB from "./utils/setupMongoDb.js";
 await connectDB(global.app_config.db_services_dtl);
-
-
 
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/wallet", walletRoutes);
+app.use("/api/grab", grabRoutes);
 
-export { app }
+export { app };

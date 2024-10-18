@@ -1,86 +1,168 @@
-'use strict';
+"use strict";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Product } from "../models/admin.model.js";
-import { ShareCount } from "../models/wallet.model.js";
-import { Wallet } from "../models/wallet.model.js";
+import { Wallet, ShareCount, Level } from "../models/wallet.model.js";
 import { Plan } from "../models/admin.model.js";
+// import { ShareCount } from "../models/wallet.model.js";
+// import { LevelSchema } from "../models/wallet.model.js";
 
 const grabProduct = asyncHandler(async (req, res) => {
-	try {
-		const { user_id: userId } = req.body || req.query;
+  try {
+    const { user_id: userId } = req.body || req.query;
 
-		const productList = await Product.find({});
-		const countDetails = await ShareCount.findOne({ userId });
-		const walletDetails = await Wallet.findOne({ userId });
-		const PlanDetails = await Plan.find({ userId });
+    const productList = await Product.find({});
+    const countDetails = await ShareCount.findOne({ userId });
+    const walletDetails = await Wallet.findOne({ userId });
+    const PlanDetails = await Plan.find({ userId });
+    console.log("countDetails", countDetails);
 
-		const planCount = PlanDetails?.shareLimit,
-			planBalance = PlanDetails?.price,
-			userTotalShareCount = countDetails.totalShareCount,
-			userRemainingCount = countDetails.shareCount,
-			userWalletBalance = walletDetails?.walletAmount;
+    const planCount = PlanDetails?.shareLimit,
+      planBalance = PlanDetails?.price,
+      userTotalShareCount = countDetails.totalShareCount,
+      userRemainingCount = countDetails.shareCount,
+      userWalletBalance = walletDetails?.walletAmount;
 
-		// Get today's date without time
-		const today = new Date();
-		today.setHours(0, 0, 0, 0); // Set to midnight
+    // Get today's date without time
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-		if (countDetails) {
-			// If the user already called this function today, check the count
-			if (countDetails.grabCount >= 10) {
-				// User exceeded the limit
-				return res
-					.status(200)
-					.json(
-						new ApiResponse(400, {}, "You have reached the maximum limit of 10 calls for today.")
-					);
-			}
+    if (countDetails) {
+      // If the user already called this function today, check the count
+      if (countDetails.grabCount >= 10) {
+        // User exceeded the limit
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(
+              400,
+              {},
+              "You have reached the maximum limit of 10 calls for today."
+            )
+          );
+      }
 
-			// Increment the call count
-			countDetails.grabCount += 1;
-			await countDetails.save();
-		} else {
-			// If no record exists for today, create a new one
-			countDetails.grabCount = 1;
-			countDetails.callDate = today;
-			await countDetails.save();
-		}
+      // Increment the call count
+      countDetails.grabCount += 1;
+      await countDetails.save();
+    } else {
+      // If no record exists for today, create a new one
+      countDetails.grabCount = 1;
+      countDetails.callDate = today;
+      await countDetails.save();
+    }
 
-		let filteredProduct = null;
-		if (userWalletBalance >= planBalance && userTotalShareCount >= planCount) {
-			if (userWalletBalance >= 100 && userTotalShareCount >= 3) {
-				filteredProduct = productList.filter(itm => itm.level == level);
-			}
-			if (userWalletBalance >= 500 && userTotalShareCount >= 5) {
-				filteredProduct = productList.filter(itm => itm.level == level1);
-			}
-			if (userWalletBalance >= 900 && userTotalShareCount >= 10) {
-				filteredProduct = productList.filter(itm => itm.level == level2);
-			}
-		}
+    let filteredProduct = null;
+    if (userWalletBalance >= planBalance && userTotalShareCount >= planCount) {
+      if (userWalletBalance >= 100 && userTotalShareCount >= 3) {
+        filteredProduct = productList.filter((itm) => itm.level == level);
+      }
+      if (userWalletBalance >= 500 && userTotalShareCount >= 5) {
+        filteredProduct = productList.filter((itm) => itm.level == level1);
+      }
+      if (userWalletBalance >= 900 && userTotalShareCount >= 10) {
+        filteredProduct = productList.filter((itm) => itm.level == level2);
+      }
+    }
 
-		// Access the random value from the array
-		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
+    // Access the random value from the array
+    const product =
+      filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
 
-		return res
-			.status(200)
-			.json(
-				new ApiResponse(200, product, "product fetched successfully")
-			);
-
-	} catch (error) {
-		throw new ApiError(400, error);
-	}
+    return res
+      .status(200)
+      .json(new ApiResponse(200, product, "product fetched successfully"));
+  } catch (error) {
+    throw new ApiError(400, error);
+  }
 });
 
-export {
-	grabProduct
-};
+// @desc Create a new level
+// @route POST /api/levels
+// @access Private
+const createLevel = asyncHandler(async (req, res) => {
+  const {
+    levelFirst,
+    levelSecond,
+    levelThird,
+    firstPartyCommission,
+    secondPartyCommission,
+  } = req.body;
 
+  const newLevel = new Level({
+    levelFirst,
+    levelSecond,
+    levelThird,
+    firstPartyCommission,
+    secondPartyCommission,
+  });
+
+  const createdLevel = await newLevel.save();
+  res.status(201).json(createdLevel);
+});
+
+const getLevels = asyncHandler(async (req, res) => {
+  const levels = await Level.find();
+  res.json(levels);
+});
+
+const getLevelById = asyncHandler(async (req, res) => {
+  const level = await Level.findById(req.params.id);
+  if (level) {
+    res.json(level);
+  } else {
+    res.status(404);
+    throw new Error("Level not found");
+  }
+});
+
+const updateLevel = asyncHandler(async (req, res) => {
+  const {
+    id,
+    levelFirst,
+    levelSecond,
+    levelThird,
+    firstPartyCommission,
+    secondPartyCommission,
+  } = req.body;
+
+  const level = await Level.findById(id);
+
+  if (level) {
+    level.levelFirst = levelFirst || level.levelFirst;
+    level.levelSecond = levelSecond || level.levelSecond;
+    level.levelThird = levelThird || level.levelThird;
+    level.firstPartyCommission =
+      firstPartyCommission || level.firstPartyCommission;
+    level.secondPartyCommission =
+      secondPartyCommission || level.secondPartyCommission;
+
+    const updatedLevel = await level.save();
+    res.json(updatedLevel);
+  } else {
+    res.status(404);
+    throw new Error("Level not found");
+  }
+});
+
+const deleteLevel = asyncHandler(async (req, res) => {
+  const { id } = req.body;
+
+  const level = await Level.findById(id);
+
+  if (level) {
+    await Level.deleteOne({ _id: id }); // Use deleteOne instead of remove
+    res.json({ message: "Level removed" });
+  } else {
+    res.status(404);
+    throw new Error("Level not found");
+  }
+});
+
+export { grabProduct, createLevel, getLevels, updateLevel, deleteLevel };
 
 // TODO: Reference code for grab product
-
 
 // const FunctionCall = require('./models/functionCall'); // import the schema
 
@@ -121,7 +203,6 @@ export {
 //         message: "Function call successful.",
 //     };
 // };
-
 
 // exports.userSellProduct = async (req, res) => {
 // 	try {
@@ -270,7 +351,6 @@ export {
 // 	}
 // }
 
-
 // const moment = require("moment");
 // const User = require("../models/User");
 // const WalletTransaction = require("../models/WalletTransaction");
@@ -304,7 +384,7 @@ export {
 
 //         if (walletTransaction) {
 //             const commission = walletTransaction.balance * (COMMISSION_PERCENTAGE / 100);
-            
+
 //             const newTransaction = new WalletTransaction({
 //                 userId: user._id,
 //                 transactionType: "Commission",
@@ -336,4 +416,3 @@ export {
 //         callCount: user.callCount,
 //     };
 // }
-

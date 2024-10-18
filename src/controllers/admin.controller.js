@@ -9,6 +9,8 @@ import {
   Plan,
   Country,
 } from "../models/admin.model.js"; // Admin and Events model imports
+import { Wallet, WalletTransaction } from "../models/wallet.model.js";
+
 import {
   User,
   withdrawalRequestAmount,
@@ -857,26 +859,50 @@ const deleteCountry = asyncHandler(async (req, res) => {
 });
 
 const getUserRecords = asyncHandler(async (req, res) => {
-  // Fetch all user records from the database
-  const userRecords = await User.find();
+  try {
+    // Fetch all user records from the database
+    const userRecords = await User.find();
 
-  // Check if there are no user records fetched
-  if (!userRecords) {
+    // Check if there are no user records fetched
+    if (!userRecords || userRecords.length === 0) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            401,
+            {},
+            "Something went wrong while getting user records"
+          )
+        );
+    }
+
+    // For each user, fetch the wallet balance
+    const userRecordsWithBalance = await Promise.all(
+      userRecords.map(async (user) => {
+        const wallet = await Wallet.findOne({ userId: user._id }).select(
+          "walletAmount"
+        );
+        return {
+          ...user.toObject(), // Convert mongoose object to plain JS object
+          walletBalance: wallet ? wallet.walletAmount : 0, // Add wallet balance
+        };
+      })
+    );
+
+    // Return success response with user records and wallet balance
     return res
       .status(200)
       .json(
         new ApiResponse(
-          401,
-          {},
-          "Something went wrong while getting user records"
+          200,
+          userRecordsWithBalance,
+          "Data fetched successfully"
         )
       );
+  } catch (error) {
+    console.error("Error fetching user records:", error.message);
+    throw new ApiError(400, error.message || "Something went wrong");
   }
-
-  // Return success response with all user records
-  return res
-    .status(200)
-    .json(new ApiResponse(200, userRecords, "Data fetched successfully"));
 });
 
 //delete country code
@@ -904,7 +930,6 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   const {
     product_name: productName,
-    // level,
     ratio_between: ratioBetween,
     price,
     plan_id: planId,
@@ -955,6 +980,34 @@ const updateProduct = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, product, "Product updated successfully"));
 });
 
+const deleteUserById = asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.params; // Get user ID from route parameters
+
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json(new ApiResponse(404, {}, "User not found"));
+    }
+
+    // Delete the user from the database
+    await User.findByIdAndDelete(userId);
+
+    // Optionally, you can also delete the user's wallet or any related data
+    await Wallet.findOneAndDelete({ userId });
+
+    // If there are transactions related to the user, you can delete them as well
+    await WalletTransaction.deleteMany({ userId });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "User deleted successfully"));
+  } catch (error) {
+    console.error("Error deleting user:", error.message);
+    throw new ApiError(400, error.message || "Something went wrong");
+  }
+});
+
 // Export the functions for use in routes
 export {
   getHomeData,
@@ -986,4 +1039,28 @@ export {
   sendAdminMessage,
   getAdminMessages,
   deleteAdminMessage,
+  deleteUserById,
 };
+
+// const getUserRecords = asyncHandler(async (req, res) => {
+//   // Fetch all user records from the database
+//   const userRecords = await User.find();
+
+//   // Check if there are no user records fetched
+//   if (!userRecords) {
+//     return res
+//       .status(200)
+//       .json(
+//         new ApiResponse(
+//           401,
+//           {},
+//           "Something went wrong while getting user records"
+//         )
+//       );
+//   }
+
+//   // Return success response with all user records
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, userRecords, "Data fetched successfully"));
+// });

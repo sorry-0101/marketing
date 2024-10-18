@@ -29,6 +29,7 @@ import {
   sendAdminMessage,
   getAdminMessages,
   deleteAdminMessage,
+  deleteUserById,
 } from "../controllers/admin.controller.js"; // Import controller functions
 import { verifyJWT } from "../middlewares/auth.middleware.js"; // Import JWT verification middleware
 import { upload } from "../middlewares/multer.middleware.js"; // Import multer middleware for handling file uploads
@@ -83,6 +84,7 @@ router.route("/updateProduct").post(
 
 // Route to get user records, protected by JWT verification
 router.route("/getUserRecords").get(verifyJWT, getUserRecords);
+router.route("/deleteUser/:userId").delete(verifyJWT, deleteUserById);
 
 // Route to add an event, protected by JWT verification
 router.route("/addEvent").post(
@@ -100,7 +102,7 @@ router.route("/addEvent").post(
 router.route("/getAllProducts").get(verifyJWT, getAllProduct);
 
 // Route to get all event records, protected by JWT verification
-router.route("/getEventRecords").get(verifyJWT, getEventRecords);
+router.route("/getEventRecords").get(getEventRecords);
 
 // Route to get all event records, protected by JWT verification
 router.route("/updateEvent").post(
@@ -205,7 +207,9 @@ router.route("/sendMessage/:id").post(
   ]),
   sendAdminMessage
 );
-router.route("/getMessages/:id").get(verifyJWT, getAdminMessages);
+// router.route("/getMessages/:id").get(verifyJWT, getAdminMessages);
+router.route("/getMessages/:id").get(getAdminMessages);
+
 router.route("/deleteMessage/:id").delete(verifyJWT, deleteAdminMessage);
 
-export default router; // Export the router for use in the app
+export default router;

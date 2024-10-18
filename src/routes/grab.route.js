@@ -1,10 +1,21 @@
-'use strict'
-
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { grabProduct } from "../controllers/grab.conrtoller.js";
+import {
+  grabProduct,
+  createLevel,
+  getLevels,
+  updateLevel,
+  deleteLevel,
+} from "../controllers/grab.conrtoller.js";
 
+const router = Router();
 
-const route = Router();
+// Corrected route definition
+router.post("/grabProduct", verifyJWT, grabProduct);
+// router.post("/createLevel", verifyJWT, createLevel);
+router.get("/getLevel", verifyJWT, getLevels);
+router.post("/updateLevel", verifyJWT, updateLevel);
+// router.delete("/deleteLevel", verifyJWT, deleteLevel);
+// router.route('/').post(createLevel).get(getLevels);
 
-route.post('/grabProduct').post(verifyJWT, grabProduct)
+export default router;
