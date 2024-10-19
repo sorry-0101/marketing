@@ -16,25 +16,25 @@ global.logged_in_user = {};
 
 // Body parser, reading data from body into req.body
 app.use(
-  express.json({
-    limit: "100mb",
-  })
+	express.json({
+		limit: "100mb",
+	})
 );
 
 // URL Encoding for req.body
 app.use(
-  express.urlencoded({
-    limit: "100mb",
-    extended: true,
-    parameterLimit: 1000000,
-  })
+	express.urlencoded({
+		limit: "100mb",
+		extended: true,
+		parameterLimit: 1000000,
+	})
 );
 
 app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || "*",
-    credentials: true,
-  })
+	cors({
+		origin: process.env.CORS_ORIGIN || "*",
+		credentials: true,
+	})
 );
 
 // importing routes

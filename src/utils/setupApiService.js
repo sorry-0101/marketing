@@ -78,7 +78,7 @@ function setupApiService(apiServiceDtl) {
 		const timeLog = [];
 		timeLog.startTime = Date.now();
 		try {
-			const bearerToken =true;
+			const bearerToken = true;
 
 			if (bearerToken) {
 				const config = {
