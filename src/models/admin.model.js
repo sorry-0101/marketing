@@ -1,7 +1,7 @@
-"use strict";
-import mongoose, { Schema } from "mongoose";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+'use strict';
+import mongoose, { Schema } from 'mongoose';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 // Schema definition for the Product collection (representing products)
 const ProductsSchema = new Schema(
@@ -111,7 +111,7 @@ const adminSchema = new Schema(
 		// Password field: required and needs validation message when missing
 		password: {
 			type: String,
-			required: [true, "Password is required"],
+			required: [true, 'Password is required'],
 		},
 		IsAdmin: {
 			type: Boolean,
@@ -133,9 +133,9 @@ const adminSchema = new Schema(
 );
 
 // Pre-save middleware to hash the user's password before saving it to the database
-adminSchema.pre("save", async function (next) {
+adminSchema.pre('save', async function (next) {
 	// If the password is not modified, skip hashing and proceed
-	if (!this.isModified("password")) return next();
+	if (!this.isModified('password')) return next();
 
 	// Hash the password with bcrypt and a salt of 10 rounds
 	this.password = await bcrypt.hash(this.password, 10);
@@ -242,12 +242,12 @@ const countrySchema = new mongoose.Schema(
 );
 
 // Export the User model, which will be used to interact with the 'users' collection in MongoDB
-export const AdminLogin = mongoose.model("Admin", adminSchema);
+export const AdminLogin = mongoose.model('Admin', adminSchema);
 // Create and export the Product model for the Products collection
-export const Product = mongoose.model("Products", ProductsSchema);
+export const Product = mongoose.model('Products', ProductsSchema);
 
 // Create and export the Events model for the Events collection
-export const Events = mongoose.model("Events", EventSchema);
-export const Slider = mongoose.model("Slider", SliderScheme);
-export const Plan = mongoose.model("Plan", PlanSchema);
-export const Country = mongoose.model("Country", countrySchema);
+export const Events = mongoose.model('Events', EventSchema);
+export const Slider = mongoose.model('Slider', SliderScheme);
+export const Plan = mongoose.model('Plan', PlanSchema);
+export const Country = mongoose.model('Country', countrySchema);

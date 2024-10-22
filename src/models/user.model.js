@@ -1,7 +1,7 @@
-"use strict";
-import mongoose, { Schema } from "mongoose";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+'use strict';
+import mongoose, { Schema } from 'mongoose';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 // Define the schema for the User model
 const userSchema = new Schema(
@@ -33,7 +33,7 @@ const userSchema = new Schema(
 		// Password field: required and needs validation message when missing
 		password: {
 			type: String,
-			required: [true, "Password is required"],
+			required: [true, 'Password is required'],
 		},
 		// Shared ID, required for some logic in the application
 		sharedId: {
@@ -55,7 +55,7 @@ const userSchema = new Schema(
 		},
 		planId: {
 			type: String,
-			ref: "Plan", // Reference to the Plan model
+			ref: 'Plan', // Reference to the Plan model
 			trim: true,
 		},
 	},
@@ -66,9 +66,9 @@ const userSchema = new Schema(
 );
 
 // Pre-save middleware to hash the user's password before saving it to the database
-userSchema.pre("save", async function (next) {
+userSchema.pre('save', async function (next) {
 	// If the password is not modified, skip hashing and proceed
-	if (!this.isModified("password")) return next();
+	if (!this.isModified('password')) return next();
 
 	// Hash the password with bcrypt and a salt of 10 rounds
 	this.password = await bcrypt.hash(this.password, 10);
@@ -150,8 +150,8 @@ const withdrawalRequestSchema = new Schema(
 		},
 		status: {
 			type: String,
-			enum: ["Pending", "Approved", "Rejected"],
-			default: "Pending",
+			enum: ['Pending', 'Approved', 'Rejected'],
+			default: 'Pending',
 		},
 	},
 	{
@@ -169,12 +169,12 @@ const messageSchema = new Schema(
 		},
 		sender: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: "User",
+			ref: 'User',
 			required: true,
 		},
 		receiver: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: "User",
+			ref: 'User',
 		},
 		userId: {
 			type: String,
@@ -188,13 +188,7 @@ const messageSchema = new Schema(
 );
 
 // Export the User model, which will be used to interact with the 'users' collection in MongoDB
-export const User = mongoose.model("User", userSchema);
-export const withdrawalRequestAmount = mongoose.model(
-	"withdrawalRequestAmount",
-	withdrawalRequestSchema
-);
-export const addressSchemaWithdrawal = mongoose.model(
-	"addressSchema",
-	addressSchema
-);
-export const Message = mongoose.model("Message", messageSchema);
+export const User = mongoose.model('User', userSchema);
+export const withdrawalRequestAmount = mongoose.model('withdrawalRequestAmount', withdrawalRequestSchema);
+export const addressSchemaWithdrawal = mongoose.model('addressSchema', addressSchema);
+export const Message = mongoose.model('Message', messageSchema);

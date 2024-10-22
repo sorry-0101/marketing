@@ -2,6 +2,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+import { ShareCount } from "../models/wallet.model.js";
 import { Wallet } from "../models/wallet.model.js";
 import { Paymentdetail } from "../models/wallet.model.js";
 import { WalletTransaction } from "../models/wallet.model.js";
@@ -11,20 +12,39 @@ import axios from "axios";
 const depositAmount = asyncHandler(async (req, res) => {
 	try {
 		const { deposit_amount: depositAmount } = req.body;
-		const userId = global?.logged_in_user?.userId || null;
+		const userId = req?.user?.userId || null;
+
 		if (!depositAmount || !userId) {
-			throw new ApiError(400, "Something went wrong");
+			throw new ApiError(400, "Deposit Amount Amount or user id not found");
 		}
 
-		const walletResponse = await Wallet.create({
-			walletAmount: parseInt(depositAmount),
-			userId,
-		});
+		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 
-		walletResponse &&
-			new ApiError(400, "Something went wrong while adding amount in wallet");
+		if (lastTransaction) {
+			const transaction = new WalletTransaction({
+				userId: userId,
+				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
+				credit: depositAmount,
+				balance: lastTransaction ? lastTransaction.balance + depositAmount : depositAmount,
+				transactionType: "Credit Amount",
+				reference: `self`,
+				referenceId: userId,
+			});
+			await transaction.save();
+		} else {
+			const transaction = await WalletTransaction.create({
+				userId: userId,
+				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
+				credit: depositAmount,
+				balance: lastTransaction ? lastTransaction.balance + depositAmount : depositAmount,
+				transactionType: "Credit Amount",
+				reference: `self`,
+				referenceId: userId,
+			});
+		}
 
-		const walletDetails = await Wallet.findById(walletResponse._id).select();
+
+		const walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 
 		return res
 			.status(200)

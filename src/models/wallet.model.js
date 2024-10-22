@@ -1,5 +1,5 @@
-"use strict";
-import mongoose, { Schema } from "mongoose";
+'use strict';
+import mongoose, { Schema } from 'mongoose';
 
 const wallet = new Schema(
 	{
@@ -16,13 +16,14 @@ const wallet = new Schema(
 const shareCount = new Schema({
 	userId: {
 		type: String,
-		ref: "User",
 	},
 	shareCount: {
 		type: Number,
+		default: 0,
 	},
 	totalShareCount: {
 		type: Number,
+		default: 0,
 	},
 	callDate: {
 		type: Date,
@@ -31,12 +32,8 @@ const shareCount = new Schema({
 	grabCount: {
 		type: Number,
 		default: 0,
-	},
-	sharedId: {
-		type: String, // Ensure this field stores the sharedId
-		required: true,
-		unique: true,
-	},
+	}
+
 });
 
 const WalletTransactionSchema = new Schema(
@@ -86,7 +83,7 @@ const paymentRequestSchema = new mongoose.Schema(
 		},
 		userId: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: "User",
+			ref: 'User',
 			required: true,
 		},
 		amount: {
@@ -100,8 +97,8 @@ const paymentRequestSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ["Expired", "Paid", "Waiting"],
-			default: "Waiting",
+			enum: ['Expired', 'Paid', 'Waiting'],
+			default: 'Waiting',
 		},
 
 		expiredAt: {
@@ -150,14 +147,8 @@ const levelSchema = new Schema(
 	{ timestamps: true }
 );
 
-export const WalletTransaction = mongoose.model(
-	"WalletTransaction",
-	WalletTransactionSchema
-);
-export const Wallet = mongoose.model("wallet", wallet);
-export const Paymentdetail = mongoose.model(
-	"PaymentRequest",
-	paymentRequestSchema
-);
-export const ShareCount = mongoose.model("shareCount", shareCount);
-export const Level = mongoose.model("LevelSchema", levelSchema);
+export const WalletTransaction = mongoose.model('WalletTransaction', WalletTransactionSchema);
+export const Wallet = mongoose.model('wallet', wallet);
+export const Paymentdetail = mongoose.model('PaymentRequest', paymentRequestSchema);
+export const ShareCount = mongoose.model('shareCount', shareCount);
+export const Level = mongoose.model('LevelSchema', levelSchema);

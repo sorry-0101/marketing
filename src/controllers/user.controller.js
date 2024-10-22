@@ -15,6 +15,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import axios from "axios";
+import moment from "moment";
 
 // Helper function to generate access and refresh tokens
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -45,13 +46,13 @@ const generateAccessAndRefreshTokens = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
 	try {
 		const { email, username, password, mobileNo } = req.body;
-		const { shared_Id: sharedId } = req.body || req.query;
+		const sharedId = req.query.shared_Id;
 
-		let userId = "";
+		let _userId = "";
 		let str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnlpqrstuvwxyz0123456789";
 		for (let i = 1; i <= 5; i++) {
 			let char = Math.floor(Math.random() * str.length + 1);
-			userId += str.charAt(char);
+			_userId += str.charAt(char);
 		}
 
 		if (!sharedId) throw new ApiError(400, "SharedId No found");
@@ -92,7 +93,7 @@ const registerUser = asyncHandler(async (req, res) => {
 			mobileNo,
 			password,
 			sharedId,
-			userId,
+			userId: _userId,
 			// adminImg: avatar.url,
 		});
 
@@ -107,45 +108,70 @@ const registerUser = asyncHandler(async (req, res) => {
 				"Something went wrong while registering the user"
 			);
 		}
+
 		if (sharedId) {
 			console.log("sharedId : ", sharedId);
 
-			// Use findOne, not findById, because sharedId is not _id
-			const shareCount = await ShareCount.findOne({ sharedId });
+			// Find the document by sharedId
+			let shareCount = await ShareCount.findOne({ userId: sharedId });
 			console.log("shareCount", shareCount);
+
 			if (!shareCount) {
-				console.error("ShareCount document not found for sharedId: ", sharedId);
-				throw new ApiError(
-					404,
-					"ShareCount document not found for the provided sharedId"
-				);
-			}
 
-			const totalShareCount = shareCount.totalShareCount + 1;
+				try {
+					// Create a new document if one does not exist
+					console.log("ShareCount document not found, creating a new one for sharedId: ", sharedId);
 
-			// Use findOneAndUpdate with sharedId field instead of _id
-			await ShareCount.findOneAndUpdate(
-				{ sharedId },
-				{
-					$set: {
-						shareCount: totalShareCount,
-						totalShareCount,
+					shareCount = await ShareCount.create({
+						userId: sharedId,
+						shareCount: 0,
+						totalShareCount: 0,
+						callDate: moment().startOf('day'),
+						grabCount: 0
+					});
+
+					console.log("New ShareCount document created for sharedId:", sharedId);
+				} catch (error) {
+					console.error("Error creating ShareCount document:", error);
+					throw new ApiError(500, "Error creating ShareCount document");
+				}
+			} else {
+				// If the document exists, update the shareCount and totalShareCount
+				const totalShareCount = shareCount.totalShareCount + 1;
+				const updatedShareCount = shareCount.shareCount + 1;
+
+				await ShareCount.findOneAndUpdate(
+					{ sharedId },
+					{
+						$set: {
+							shareCount: updatedShareCount, // Update the share count
+							totalShareCount, // Update the total share count
+						},
 					},
-				},
-				{ new: true }
-			);
+					{ new: true }
+				);
+				console.log("ShareCount document updated for sharedId:", sharedId);
+			}
 		}
 
-		const walletResponse = await Wallet.create({ walletAmount: 0, userId });
+		const transaction = await WalletTransaction.create({
+			userId: _userId,
+			transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
+			credit: 0,
+			balance: 0,
+			transactionType: "Opening Amount",
+			reference: `self`,
+			referenceId: _userId,
+		});
 
-		const walletDetails = await Wallet.findById(walletResponse.userId).select();
+		const walletDetails = await WalletTransaction.findById(transaction._id).select();
 		// Return success response
 		return res
 			.status(201)
 			.json(
 				new ApiResponse(
 					200,
-					{ createdUser, walletDetails },
+					{ createdUser, walletDetails, },
 					"User registered Successfully"
 				)
 			);
@@ -185,31 +211,30 @@ const loginUser = asyncHandler(async (req, res) => {
 		"-password -refreshToken"
 	);
 
+
+	const userId = loggedInUser.userId,
+		walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1 }),
+		childUsers = await getUsersLevel(loggedInUser.userId),
+		plans = await Plan.find({}),
+		shareCountDetails = await ShareCount.findOne({ userId });
+
+	const activePlan = plans?.find(itm => ((itm.price <= walletDetails?.balance) && (itm?.shareLimit <= shareCountDetails?.shareCount)));
 	req.user = loggedInUser;
-
-	const allWalletDetail = await Wallet.find({});
-	const childUsers = await getUsersLevel(loggedInUser.userId);
-
-	// Fetch all documents
-	const plans = await Plan.find({});
-
-	const walletDetails = allWalletDetail?.find(
-		(itm) => itm.userId === loggedInUser.userId
-	);
+	req.user.activePlan = activePlan;
 
 	let levelCount = 0;
 
 	if (walletDetails && childUsers && levelCount != 3) {
-		if (walletDetails?.walletAmount >= 100) {
+		if (walletDetails?.balance >= 100) {
 			for (const child of childUsers) {
 				const childWalletDetails = await Wallet.findById(child.userId);
-				childWalletDetails?.walletAmount >= 100 && levelCount++;
+				childWalletDetails?.balance >= 100 && levelCount++;
 			}
 		}
 	}
 
 	let level1 = false;
-	if (levelCount >= 3 && walletDetails?.walletAmount >= 100) {
+	if (levelCount >= 3 && walletDetails?.balance >= 100) {
 		level1 = true;
 	}
 	// Store user details in the global variable
@@ -235,7 +260,7 @@ const loginUser = asyncHandler(async (req, res) => {
 				200,
 				{
 					user: loggedInUser,
-					data: plans,
+					activePlan: activePlan,
 					walletDetails: walletDetails,
 					accessToken,
 					refreshToken,
@@ -356,7 +381,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 	return res
 		.status(200)
 		.json(
-			new ApiResponse(200, global.logged_in_user, "User fetched successfully")
+			new ApiResponse(200, req.user, "User fetched successfully")
 		);
 });
 
