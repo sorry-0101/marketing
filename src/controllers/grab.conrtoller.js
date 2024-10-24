@@ -19,8 +19,8 @@ const grabProduct = asyncHandler(async (req, res) => {
 		// const PlanDetails = await Plan.find({});
 		console.log('countDetails', countDetails);
 
-		const maxCallsPerDay = req?.user?.activePlan?.grabNo || 10,
-			directCommissionPercentage = req?.user?.activePlan?.commission || 3;
+		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo) || 10,
+			directCommissionPercentage = req?.user?.activePlan?.commission || global?.activePlan?.commission;
 
 		const today = moment().startOf('day');
 
@@ -28,49 +28,38 @@ const grabProduct = asyncHandler(async (req, res) => {
 		if (!countDetails?.callDate || moment(countDetails?.callDate).isBefore(today)) {
 			countDetails.grabCount = 0;  // Reset call count
 		}
-		if (countDetails?.grabCount > maxCallsPerDay) {
-			return {
-				status: 400,
-				message: 'You have reached the maximum number of calls for today.',
-			};
-		}
 
-		if (countDetails?.grabCount == maxCallsPerDay) {
+		const filteredProduct = productList?.filter((itm) => itm?.level == req?.user?.activePlan?.title || global?.activePlan?.title);
+		// Access the random product from the array
+		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
 
+		if (countDetails?.grabCount < maxCallsPerDay) {
 			if (lastTransaction) {
 				try {
-					const commission = 3; //walletDetails?.walletAmount * (directCommissionPercentage / 100);
+					const commission = product?.price * (directCommissionPercentage / 100);
 					const transaction = new WalletTransaction({
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 						credit: commission,
 						balance: lastTransaction ? lastTransaction.balance + commission : commission,
-						transactionType: 'Direct Commission',
-						reference: `Daily call limit reached`,
+						transactionType: 'Direct Grab Commission',
+						reference: `Daily Grab`,
 					});
 					await transaction.save();
+					await handleLevelCommission(sharedId, commission);
+					// Increment the user's call count
+					countDetails.grabCount += 1;
+					countDetails.callDate = new Date();
+					await countDetails.save();
 				} catch (error) {
-					throw new ApiError(
-						400,
-						'Something went wrong while adding Direct Commission Percentage to wallet'
-					);
+					throw new ApiError(400, 'Something went wrong while adding Direct Commission Percentage to wallet');
 				}
 			}
-
-			// const parentWalletDetails = await Wallet.findOne({ userId: sharedId });
-			// let user = await User.findOne({ userId });
-			await handleLevelCommission(sharedId, 'Level1', 2)
+		} else {
+			return res
+				.status(200)
+				.json(new ApiResponse(200, {}, 'You have reached the maximum number of calls for today.'));
 		}
-
-		const filteredProduct = productList?.filter((itm) => itm?.level == req?.user?.activePlan?.title);
-
-		// Access the random value from the array
-		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
-
-		// Increment the user's call count
-		countDetails.grabCount += 1;
-		countDetails.callDate = new Date();
-		await countDetails.save();
 		return res
 			.status(200)
 			.json(new ApiResponse(200, product, 'product fetched successfully'));
@@ -79,7 +68,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 	}
 });
 
-async function handleLevelCommission(sharedId, productId = 'level1', productPrice = 3) {
+async function handleLevelCommission(sharedId, commissionLevel) {
 	// Logic for level 1, 2, and 3 commissions
 	let level1 = await User.findOne({ userId: sharedId });
 	let level2, level3;
@@ -88,11 +77,13 @@ async function handleLevelCommission(sharedId, productId = 'level1', productPric
 	if (level2) level3 = await User.findOne({ userId: level2.sharedId });
 
 	const levels = [level1, level2, level3];
-	const levelCommissions = [16, 8, 4];
+
+	const levelsCommissions = await Level.find({});
+	const levelCommissions = [levelsCommissions[0]?.levelFirst || 16, levelsCommissions[0]?.levelSecond || 8, levelsCommissions[0]?.levelThird || 4];
 
 	for (let i = 0; i < levels.length; i++) {
 		if (levels[i]) {
-			const commission = (productPrice * levelCommissions[i]) / 100;
+			const commission = commissionLevel * (parseInt(levelCommissions[i]) / 100);
 			const lastTransaction = await WalletTransaction.findOne({ userId: levels[i].userId }).sort({ _id: -1 });
 
 			const transaction = new WalletTransaction({
@@ -102,8 +93,7 @@ async function handleLevelCommission(sharedId, productId = 'level1', productPric
 				balance: lastTransaction ? lastTransaction.balance + commission : commission,
 				transactionType: 'Level Commission',
 				reference: `Level ${i + 1}`,
-				referenceId: levels[i].userId,
-				reportId: productId,
+				referenceId: levels[i].userId
 			});
 			await transaction.save();
 		}

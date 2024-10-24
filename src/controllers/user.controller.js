@@ -218,25 +218,22 @@ const loginUser = asyncHandler(async (req, res) => {
 		plans = await Plan.find({}),
 		shareCountDetails = await ShareCount.findOne({ userId });
 
-	const activePlan = plans?.find(itm => ((itm.price <= walletDetails?.balance) && (itm?.shareLimit <= shareCountDetails?.shareCount)));
+	const currentlyActivePlan = plans?.find(itm => ((itm.price <= walletDetails?.balance) && (itm?.shareLimit <= shareCountDetails?.shareCount)));
 	req.user = loggedInUser;
-	req.user.activePlan = activePlan;
 
-	let levelCount = 0;
-
-	if (walletDetails && childUsers && levelCount != 3) {
-		if (walletDetails?.balance >= 100) {
-			for (const child of childUsers) {
-				const childWalletDetails = await Wallet.findById(child.userId);
-				childWalletDetails?.balance >= 100 && levelCount++;
-			}
-		}
+	const UserActivePlan = {
+		title: currentlyActivePlan?.title,
+		commission: currentlyActivePlan?.commission,
+		price: currentlyActivePlan?.price,
+		planImg: currentlyActivePlan?.planImg,
+		grabNo: currentlyActivePlan?.grabNo,
+		shareCount: currentlyActivePlan?.shareCount,
+		shareLimit: currentlyActivePlan?.shareLimit,
 	}
 
-	let level1 = false;
-	if (levelCount >= 3 && walletDetails?.balance >= 100) {
-		level1 = true;
-	}
+	req.user.activePlan = UserActivePlan;
+	global.activePlan = UserActivePlan;
+
 	// Store user details in the global variable
 	global.logged_in_user = global.logged_in_user || {};
 	global.logged_in_user = {
@@ -260,7 +257,7 @@ const loginUser = asyncHandler(async (req, res) => {
 				200,
 				{
 					user: loggedInUser,
-					activePlan: activePlan,
+					activePlan: currentlyActivePlan,
 					walletDetails: walletDetails,
 					accessToken,
 					refreshToken,

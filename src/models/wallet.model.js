@@ -124,15 +124,15 @@ const paymentRequestSchema = new mongoose.Schema(
 const levelSchema = new Schema(
 	{
 		levelFirst: {
-			type: String,
+			type: Number,
 			required: true,
 		},
 		levelSecond: {
-			type: String,
+			type: Number,
 			required: true,
 		},
 		levelThird: {
-			type: String,
+			type: Number,
 			required: true,
 		},
 		firstPartyCommission: {
