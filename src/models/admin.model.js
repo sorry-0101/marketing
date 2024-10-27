@@ -31,6 +31,10 @@ const ProductsSchema = new Schema(
 			require: true,
 			trim: true,
 		},
+		productId: {
+			type: String,
+			trim: true
+		},
 		// Product image URL (e.g., Cloudinary URL), stored as a string
 		productImg: {
 			type: String,

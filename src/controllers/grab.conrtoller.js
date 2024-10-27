@@ -5,6 +5,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { Product, Plan } from '../models/admin.model.js';
 import { Wallet, ShareCount, Level } from '../models/wallet.model.js';
 import { WalletTransaction } from '../models/wallet.model.js';
+import { CustomerProductReport } from '../models/product.model.js';
 import { User } from '../models/user.model.js';
 import moment from 'moment';
 
@@ -20,7 +21,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 		console.log('countDetails', countDetails);
 
 		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo) || 10,
-			directCommissionPercentage = req?.user?.activePlan?.commission || global?.activePlan?.commission;
+			directCommissionPercentage = (req?.user?.activePlan?.commission || global?.activePlan?.commission) / maxCallsPerDay;
 
 		const today = moment().startOf('day');
 
@@ -29,14 +30,15 @@ const grabProduct = asyncHandler(async (req, res) => {
 			countDetails.grabCount = 0;  // Reset call count
 		}
 
+
 		const filteredProduct = productList?.filter((itm) => itm?.level == req?.user?.activePlan?.title || global?.activePlan?.title);
 		// Access the random product from the array
 		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
-
+		let savedProduct = null;
 		if (countDetails?.grabCount < maxCallsPerDay) {
 			if (lastTransaction) {
 				try {
-					const commission = product?.price * (directCommissionPercentage / 100);
+					const commission = lastTransaction?.balance * (directCommissionPercentage / 100);
 					const transaction = new WalletTransaction({
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
@@ -47,12 +49,13 @@ const grabProduct = asyncHandler(async (req, res) => {
 					});
 					await transaction.save();
 					await handleLevelCommission(sharedId, commission);
+					savedProduct = await updateUserCustomerProduct(product, commission, userId);
 					// Increment the user's call count
 					countDetails.grabCount += 1;
 					countDetails.callDate = new Date();
 					await countDetails.save();
 				} catch (error) {
-					throw new ApiError(400, 'Something went wrong while adding Direct Commission Percentage to wallet');
+					throw new ApiError(400, error);
 				}
 			}
 		} else {
@@ -62,11 +65,28 @@ const grabProduct = asyncHandler(async (req, res) => {
 		}
 		return res
 			.status(200)
-			.json(new ApiResponse(200, product, 'product fetched successfully'));
+			.json(new ApiResponse(200, savedProduct, 'product fetched successfully'));
 	} catch (error) {
-		throw new ApiError(400, error);
+		throw new ApiError(400, error.message);
 	}
 });
+
+async function updateUserCustomerProduct(product, grabCommission, userId) {
+	try {
+		const productDtl = await CustomerProductReport.create({
+			userId: userId,
+			productId: product?.productId,
+			buyStatus: "BUY",
+			productName: product?.productName,
+			productPrice: product?.price,
+			grabCommission: grabCommission,
+			buyDate: new Date
+		});
+		return productDtl;
+	} catch (error) {
+		throw error;
+	}
+}
 
 async function handleLevelCommission(sharedId, commissionLevel) {
 	// Logic for level 1, 2, and 3 commissions

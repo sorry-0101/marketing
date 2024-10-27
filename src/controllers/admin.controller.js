@@ -205,6 +205,13 @@ const addProduct = asyncHandler(async (req, res) => {
 		throw new ApiError(400, "Avatar file is required");
 	}
 
+	let productId = "";
+	let str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnlpqrstuvwxyz0123456789";
+	for (let i = 1; i <= 5; i++) {
+		let char = Math.floor(Math.random() * str.length + 1);
+		productId += str.charAt(char);
+	}
+
 	// Create new product in the database
 	const product = await Product.create({
 		productName,
@@ -213,6 +220,7 @@ const addProduct = asyncHandler(async (req, res) => {
 		price,
 		planId, // Include planId
 		planName, // Include planName
+		productId,
 		productImg: productImgObj.url,
 	});
 	const addedProduct = await Product.findById(product._id).select();
