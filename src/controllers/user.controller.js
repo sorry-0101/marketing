@@ -253,7 +253,7 @@ const loginUser = asyncHandler(async (req, res) => {
 		shareCountDetails = (await ShareCount.findOne({ userId })) || {
 			shareCount: 0,
 		};
-
+	console.log(childUsers);
 	const currentlyActivePlan = plans?.find(
 		(itm) =>
 			itm.price <= walletDetails?.balance &&
@@ -516,41 +516,72 @@ const getUsersAtLevel = asyncHandler(async (req, res) => {
 
 		// Get users at levels 1, 2, or 3 with their level info
 		const userLevels = await getUsersLevel(userId, new Set(), 1);
-		// console.log("userLevels", userLevels); // Debug log
 
 		// Prepare an array of user IDs for bulk fetching transactions
-		const userIds = userLevels.map((item) => item.user.userId); // Extract user IDs
+		const userIds = userLevels.map((item) => item.user.userId);
 
 		// Fetch the latest wallet balance for each user using aggregation
 		const lastTransactions = await WalletTransaction.aggregate([
 			{ $match: { userId: { $in: userIds } } },
 			{ $sort: { _id: -1 } },
-			{ $group: { _id: "$userId", balance: { $first: "$balance" } } },
-			{ $project: { userId: "$_id", balance: 1, _id: 0 } },
+			{
+				$group: {
+					_id: "$userId",
+					balance: { $first: "$balance" },
+					credit: { $first: "$credit" },
+					debit: { $first: "$debit" },
+				},
+			},
+			{
+				$project: {
+					userId: "$_id",
+					balance: 1,
+					credit: 1,
+					debit: 1,
+					_id: 0,
+				},
+			},
 		]);
 
-		// Create a mapping of userId to balance for quick lookup
-		const balanceMap = lastTransactions.reduce((acc, transaction) => {
-			acc[transaction.userId] = transaction.balance;
-			return acc;
-		}, {});
+		// Create balance, credit, and debit mappings and calculate totals
+		const { balanceMap, creditBalance, debitBalance, totalBalances } = lastTransactions.reduce(
+			(acc, transaction) => {
+				const { userId, balance, credit, debit } = transaction;
+				acc.balanceMap[userId] = balance || 0;
+				acc.creditBalance[userId] = credit || 0;
+				acc.debitBalance[userId] = debit || 0;
+				acc.totalBalances.balance += balance || 0;
+				acc.totalBalances.credit += credit || 0;
+				acc.totalBalances.debit += debit || 0;
+				return acc;
+			},
+			{
+				balanceMap: {},
+				creditBalance: {},
+				debitBalance: {},
+				totalBalances: { balance: 0, credit: 0, debit: 0 },
+			}
+		);
 
 		// Merge user levels with their corresponding wallet balances
 		const usersWithWalletBalances = userLevels.map((item) => {
-			const user = item.user; // Get the user object
-			const currentUserId = user.userId; // Access userId directly from user object
-
-			// Get the balance from the mapping, default to 0 if not found
-			const walletBalance = balanceMap[currentUserId] || 0;
+			const { user } = item;
+			const { userId, username, email, mobileNo, sharedId } = user;
+			const level = item.level;
 
 			return {
-				userId: user.userId,
-				username: user.username,
-				email: user.email,
-				mobileNo: user.mobileNo,
-				sharedId: user.sharedId,
-				walletBalance, // Include the wallet balance
-				level: item.level, // Extract the level from the item
+				userId,
+				username,
+				email,
+				mobileNo,
+				sharedId,
+				walletBalance: balanceMap[userId],
+				credit: creditBalance[userId],
+				debit: debitBalance[userId],
+				level,
+				teamBalance: totalBalances.balance,
+				teamCredit: totalBalances.credit,
+				teamDebit: totalBalances.debit,
 			};
 		});
 
@@ -561,6 +592,7 @@ const getUsersAtLevel = asyncHandler(async (req, res) => {
 		res.status(500).json({ message: "Internal server error" });
 	}
 });
+
 
 const getUsersLevel = async (
 	userId,
