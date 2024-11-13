@@ -42,6 +42,7 @@ import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import walletRoutes from "./routes/wallet.routes.js";
 import grabRoutes from "./routes/grab.route.js";
+import teamRoutes from "./routes/team.routes.js"
 
 app.use(express.static("public"));
 app.use(cookieParser());
@@ -54,5 +55,6 @@ app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/grab", grabRoutes);
+app.use("/api/team", teamRoutes);
 
 export { app };
