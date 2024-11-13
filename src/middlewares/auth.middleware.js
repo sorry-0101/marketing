@@ -10,55 +10,34 @@ import { AdminLogin } from "../models/admin.model.js"; // Assuming you have an A
 export const verifyJWT = asyncHandler(async (req, _, next) => {
 	try {
 		// Retrieve token for user or admin from cookies or Authorization header (Bearer token)
-		const userToken =
+		const token =
 			req.cookies?.accessToken ||
 			req.header("Authorization")?.replace("Bearer ", "");
-		const adminToken =
-			req.cookies?.accessTokenAdmin ||
-			req.header("Authorization")?.replace("Bearer ", "");
 
-		let decodedToken;
 		let userOrAdmin = null;
 
 		// Check if user token exists, else check for admin token
-		if (userToken) {
+		if (token) {
 			// Verify the user token using user secret key
-			decodedToken = jwt.verify(userToken, process.env.ACCESS_TOKEN_SECRET);
+			const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
 			// Find the user by ID from the decoded token
 			userOrAdmin = await User.findById(decodedToken?._id).select(
-				"-password -refreshToken"
+				"-password "
 			);
-			//   TODO: need to look into this make seprate toke for admin in future
+
 			if (!userOrAdmin) {
-				// Find the admin by ID from the decoded token
-				decodedToken = jwt.verify(adminToken, process.env.ACCESS_TOKEN_SECRET);
 				userOrAdmin = await AdminLogin.findById(decodedToken?._id).select(
-					"-password -refreshTokenAdmin"
+					"-password "
 				);
 			}
 
-			if (!userOrAdmin) {
-				throw new ApiError(401, "Invalid User Access Token");
+			// If user/admin is not found or token mismatch, clear cookies and require re-login
+			if (!userOrAdmin || userOrAdmin.refreshToken !== req.cookies.refreshToken) {
+				return res.status(401).clearCookie("accessToken").clearCookie("refreshToken").json({ message: "Session expired. Please log in again." });
 			}
 
-			// Attach user data to request object
 			req.user = userOrAdmin;
-		} else if (adminToken) {
-			// Verify the admin token using admin secret key
-			decodedToken = jwt.verify(adminToken, process.env.ACCESS_TOKEN_SECRE);
-
-			// Find the admin by ID from the decoded token
-			userOrAdmin = await AdminLogin.findById(decodedToken?._id).select(
-				"-password -refreshTokenAdmin"
-			);
-
-			if (!userOrAdmin) {
-				throw new ApiError(401, "Invalid Admin Access Token");
-			}
-
-			// Attach admin data to request object
-			req.admin = userOrAdmin;
 		} else {
 			// Throw an error if neither user nor admin token is present
 			throw new ApiError(401, "Unauthorized request");
