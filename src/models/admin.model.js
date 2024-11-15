@@ -121,14 +121,13 @@ const adminSchema = new Schema(
 			type: Boolean,
 			require: true,
 		},
-		// Field for storing the refresh token (used for authentication)
-		refreshToken: {
-			type: String,
-		},
 		// Avatar URL (e.g., from Cloudinary) to store the user's profile picture
 		adminImg: {
 			type: String,
 		},
+		currentAccessToken: {
+			type: String,
+		}
 	},
 	{
 		// Automatically add timestamps (createdAt and updatedAt) to the model
@@ -165,20 +164,6 @@ adminSchema.methods.generateAccessToken = function () {
 		process.env.ACCESS_TOKEN_SECRET, // Secret key for signing the access token
 		{
 			expiresIn: process.env.ACCESS_TOKEN_EXPIRY, // Access token expiry duration (from environment variable)
-		}
-	);
-};
-
-// Method to generate a JWT refresh token for the user
-adminSchema.methods.generateRefreshToken = function () {
-	// Sign a refresh token with the user's ID and a separate secret key, with an expiration time
-	return jwt.sign(
-		{
-			_id: this._id,
-		},
-		process.env.REFRESH_TOKEN_SECRET, // Secret key for signing the refresh token
-		{
-			expiresIn: process.env.REFRESH_TOKEN_EXPIRY, // Refresh token expiry duration (from environment variable)
 		}
 	);
 };

@@ -31,10 +31,12 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
 					"-password "
 				);
 			}
-
-			// If user/admin is not found or token mismatch, clear cookies and require re-login
-			if (!userOrAdmin || userOrAdmin.refreshToken !== req.cookies.refreshToken) {
-				return res.status(401).clearCookie("accessToken").clearCookie("refreshToken").json({ message: "Session expired. Please log in again." });
+			// Check if the token in the request matches the currentAccessToken in the database
+			if (!userOrAdmin || userOrAdmin.currentAccessToken !== token) {
+				return _
+					.status(401)
+					.clearCookie("accessToken")
+					.json({ message: "Session expired. Please log in again." });
 			}
 
 			req.user = userOrAdmin;

@@ -26,14 +26,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 		// Generate access and refresh tokens
 		const accessToken = user.generateAccessToken();
-		const refreshToken = user.generateRefreshToken();
-
-		// Save the refresh token to the user document
-		user.refreshToken = refreshToken;
-		await user.save({ validateBeforeSave: false });
-
 		// Return the tokens
-		return { accessToken, refreshToken };
+		return accessToken;
 	} catch (error) {
 		// Handle any errors during token generation
 		throw new ApiError(
@@ -235,15 +229,16 @@ const loginUser = asyncHandler(async (req, res) => {
 	}
 
 	// Generate access and refresh tokens
-	const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+	const accessToken = await generateAccessAndRefreshTokens(
 		user._id
 	);
+	await User.findByIdAndUpdate(user._id, { currentAccessToken: accessToken });
 
-	// Fetch the logged-in user without password and refreshToken fields
+	// Fetch the logged-in user without password  fields
 	const loggedInUser = await User.findById(user._id).select(
-		"-password -refreshToken"
+		"-password"
 	);
-
+	console.log(loggedInUser)
 	const userId = loggedInUser.userId,
 		walletDetails = await WalletTransaction.findOne({ userId }).sort({
 			_id: -1,
@@ -253,7 +248,6 @@ const loginUser = asyncHandler(async (req, res) => {
 		shareCountDetails = (await ShareCount.findOne({ userId })) || {
 			shareCount: 0,
 		};
-	console.log(childUsers);
 	const currentlyActivePlan = plans?.find(
 		(itm) =>
 			itm.price <= walletDetails?.balance &&
@@ -292,7 +286,6 @@ const loginUser = asyncHandler(async (req, res) => {
 	return res
 		.status(200)
 		.cookie("accessToken", accessToken, options)
-		.cookie("refreshToken", refreshToken, options)
 		.json(
 			new ApiResponse(
 				200,
@@ -301,7 +294,6 @@ const loginUser = asyncHandler(async (req, res) => {
 					activePlan: currentlyActivePlan,
 					walletDetails: walletDetails,
 					accessToken,
-					refreshToken,
 				},
 				"User logged In Successfully"
 			)
@@ -313,7 +305,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 	// Remove refresh token from user document
 	await User.findByIdAndUpdate(
 		req.user._id,
-		{ $unset: { refreshToken: 1 } },
+		{ $unset: { currentAccessToken: null } },
 		{ new: true }
 	);
 
@@ -322,7 +314,6 @@ const logoutUser = asyncHandler(async (req, res) => {
 	return res
 		.status(200)
 		.clearCookie("accessToken", options)
-		.clearCookie("refreshToken", options)
 		.json(new ApiResponse(200, {}, "User logged Out"));
 });
 
@@ -351,6 +342,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 		const { accessToken, newRefreshToken } =
 			await generateAccessAndRefreshTokens(user._id);
 		const options = { httpOnly: true, secure: true };
+
+		await User.findByIdAndUpdate(user._id, { currentAccessToken: accessToken });
 
 		// Return the refreshed tokens
 		return res

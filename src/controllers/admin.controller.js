@@ -32,14 +32,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
 		// Generate access and refresh tokens
 		const accessToken = admin.generateAccessToken();
-		const refreshToken = admin.generateRefreshToken();
-
-		// Save the refresh token to the user document
-		admin.refreshToken = refreshToken;
-		await admin.save({ validateBeforeSave: false });
-
 		// Return the tokens
-		return { accessToken, refreshToken };
+		return accessToken;
 	} catch (error) {
 		// Handle any errors during token generation
 		throw new ApiError(
@@ -106,7 +100,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
 
 	// Fetch the created user without password and refreshToken fields
 	const registeredAdmin = await AdminLogin.findById(admin._id).select(
-		"-password -refreshToken"
+		"-password"
 	);
 
 	if (!registeredAdmin) {
@@ -143,12 +137,13 @@ const adminLogin = asyncHandler(async (req, res) => {
 	}
 
 	// Generate access and refresh tokens
-	const { accessToken, refreshToken } =
-		await generateAccessAndRefreshTokens(admin._id);
+	const accessToken = await generateAccessAndRefreshTokens(admin._id);
+
+	await AdminLogin.findByIdAndUpdate(admin._id, { currentAccessToken: accessToken });
 
 	// Fetch the logged-in user without password and refreshToken fields
 	const loggedInAdmin = await AdminLogin.findById(admin._id).select(
-		"-password -refreshToken"
+		"-password"
 	);
 
 	// Set HTTP-only and secure cookie options
@@ -158,11 +153,10 @@ const adminLogin = asyncHandler(async (req, res) => {
 	return res
 		.status(200)
 		.cookie("accessToken", accessToken, options)
-		.cookie("refreshToken", refreshToken, options)
 		.json(
 			new ApiResponse(
 				200,
-				{ admin: loggedInAdmin, accessToken, refreshToken },
+				{ admin: loggedInAdmin, accessToken },
 				"Admin logged In Successfully"
 			)
 		);
@@ -231,53 +225,6 @@ const addProduct = asyncHandler(async (req, res) => {
 		.status(200)
 		.json(new ApiResponse(200, addedProduct, "Product added successfully"));
 });
-
-// const addProduct = asyncHandler(async (req, res) => {
-//   const {
-//     product_name: productName,
-//     level,
-//     ratio_between: ratioBetween,
-//     price,
-//   } = req.body;
-
-//   // Validate required fields
-//   if (
-//     [productName, level, ratioBetween].some(
-//       (field) => typeof field === "string" && field.trim() === ""
-//     )
-//   ) {
-//     return res.status(400).json(400, {}, "All fields are required");
-//   }
-
-//   // Check for product image in the request
-//   const productImgPath = req.files?.productImg?.[0]?.path;
-
-//   if (!productImgPath) {
-//     throw new ApiError(400, "Product Image is required");
-//   }
-
-//   // Upload product image to Cloudinary
-//   const productImgObj = await uploadOnCloudinary(productImgPath);
-
-//   if (!productImgObj) {
-//     throw new ApiError(400, "Avatar file is required");
-//   }
-
-//   // Create new product in the database
-//   const product = await Product.create({
-//     productName,
-//     level,
-//     ratioBetween,
-//     price,
-//     productImg: productImgObj.url,
-//   });
-//   const addedProduct = await Product.findById(product._id).select();
-
-//   // Return success response with the added product
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, addedProduct, "Product added successfully"));
-// });
 
 /**
  * @desc Add a new event
