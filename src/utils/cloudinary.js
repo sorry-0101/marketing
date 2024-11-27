@@ -4,9 +4,9 @@ import fs from "fs"
 
 // TODO: need to look into this why values are not getting form env
 cloudinary.config({
-	cloud_name: 'dqc19jdwd' || process.env.CLOUDINARY_CLOUD_NAME,
-	api_key: '821619143512213' || process.env.CLOUDINARY_API_KEY,
-	api_secret: 'SAf3_kDncWab4P2IkmfSlL0V-Sg' || process.env.CLOUDINARY_API_SECRET,
+	cloud_name: 'djjrm0dxu' || process.env.CLOUDINARY_CLOUD_NAME,
+	api_key: '684431212259549' || process.env.CLOUDINARY_API_KEY,
+	api_secret: '-JrRJcTNJw95tmV_6bkm_6NlrEE' || process.env.CLOUDINARY_API_SECRET,
 });
 
 const uploadOnCloudinary = async (localFilePath) => {
