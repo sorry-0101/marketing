@@ -154,6 +154,7 @@ adminSchema.methods.isPasswordCorrect = async function (password) {
 // Method to generate a JWT access token for the user
 adminSchema.methods.generateAccessToken = function () {
 	// Sign a JWT with the user's basic information and secret key, with an expiration time
+	console.log(process.env.ACCESS_TOKEN_SECRET);
 	return jwt.sign(
 		{
 			_id: this._id,

@@ -5,9 +5,7 @@ import config from "config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-// import setupApiService from './utils/setupApiService';
-
-dotenv.config({ path: './.env' });
+dotenv.config({ path: '../.env' });
 
 const app = express();
 
@@ -57,5 +55,9 @@ app.use("/api/admin", adminRouter);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/grab", grabRoutes);
 app.use("/api/team", teamRoutes);
+
+app.get('/', (req, res) => {
+	res.send('Welcome to the API!');
+});
 
 export { app };
