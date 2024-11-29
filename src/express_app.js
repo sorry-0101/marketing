@@ -7,11 +7,12 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 // import setupApiService from './utils/setupApiService';
 
-// dotenv.config({ path: './.env' });
+dotenv.config({ path: './.env' });
 
 const app = express();
 
 global.app_config = config.get("app_config");
+console.log("App Config:", global.app_config);
 global.logged_in_user = {};
 
 // Body parser, reading data from body into req.body
