@@ -6,7 +6,7 @@
 			"api_timeout": 240000
 		},
 		"db_services_dtl": {
-			"mongodb_uri": "mongodb+srv://admin:Shivangi0127@demo-cluster-1.pgtrl.mongodb.net/?retryWrites=true&w=majority&appName=Demo-Cluster-1"
+			"mongodb_uri": "mongodb+srv://vortexventures54:XjNkt14aGiCiWWRT@cluster1.jc3w1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1"
 		},
 		"cloudinary_details": {
 			"CLOUDINARY_CLOUD_NAME": "djjrm0dxu",
