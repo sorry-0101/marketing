@@ -6,7 +6,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 dotenv.config({ path: '../.env' });
-
+gconsole.log('ACCESS_TOKEN_SECRET:', process.env.ACCESS_TOKEN_SECRET);
 const app = express();
 
 global.app_config = config.get("app_config");
