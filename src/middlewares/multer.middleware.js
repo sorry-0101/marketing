@@ -5,7 +5,7 @@ const storage = multer.diskStorage({
 	// Specify the destination where files will be stored
 	destination: function (req, file, cb) {
 		// The 'cb' (callback) function is used to pass the directory path for file uploads
-		cb(null, "./public/temp"); // Files are stored in the "./public/temp" directory
+		cb(null, "../public/temp"); // Files are stored in the "./public/temp" directory
 	},
 	// Define the filename for the uploaded file
 	filename: function (req, file, cb) {
