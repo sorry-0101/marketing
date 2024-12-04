@@ -26,44 +26,31 @@ const grabProduct = asyncHandler(async (req, res) => {
 		// const PlanDetails = await Plan.find({});
 		// console.log("countDetails", countDetails);
 
-		const maxCallsPerDay =
-			req?.user?.activePlan?.grabNo ||
-			parseInt(global?.activePlan?.grabNo) ||
-			10,
-			directCommissionPercentage =
-				(req?.user?.activePlan?.commission || global?.activePlan?.commission) /
-				maxCallsPerDay;
+		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo) || 10,
+			directCommissionPercentage = (req?.user?.activePlan?.commission || global?.activePlan?.commission) / maxCallsPerDay;
 
 		const today = moment().startOf("day");
 
 		// Check if the user's call count needs resetting (if the last call was not today)
 		if (
-			!countDetails?.callDate ||
-			moment(countDetails?.callDate).isBefore(today)
+			!countDetails?.callDate || moment(countDetails?.callDate).isBefore(today)
 		) {
 			countDetails.grabCount = 0; // Reset call count
 		}
 
-		const filteredProduct = productList?.filter(
-			(itm) =>
-				itm?.level == req?.user?.activePlan?.title || global?.activePlan?.title
-		);
+		const filteredProduct = productList?.filter((itm) => itm?.level == req?.user?.activePlan?.title || global?.activePlan?.title);
 		// Access the random product from the array
-		const product =
-			filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
+		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
 		let savedProduct = null;
 		if (countDetails?.grabCount < maxCallsPerDay) {
 			if (lastTransaction) {
 				try {
-					const commission =
-						lastTransaction?.balance * (directCommissionPercentage / 100);
+					const commission = lastTransaction?.balance * (directCommissionPercentage / 100);
 					const transaction = new WalletTransaction({
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 						credit: commission,
-						balance: lastTransaction
-							? lastTransaction.balance + commission
-							: commission,
+						balance: lastTransaction ? lastTransaction.balance + commission : commission,
 						transactionType: "Direct Grab Commission",
 						reference: "Daily Grab",
 					});
@@ -138,19 +125,14 @@ async function handleLevelCommission(sharedId, commissionLevel) {
 
 	for (let i = 0; i < levels.length; i++) {
 		if (levels[i]) {
-			const commission =
-				commissionLevel * (parseInt(levelCommissions[i]) / 100);
-			const lastTransaction = await WalletTransaction.findOne({
-				userId: levels[i].userId,
-			}).sort({ _id: -1 });
-			console.log("commission", commission);
+			const commission = commissionLevel * (parseInt(levelCommissions[i]) / 100);
+			const lastTransaction = await WalletTransaction.findOne({ userId: levels[i].userId, }).sort({ _id: -1 });
+			// console.log("commission", commission);
 			const transaction = new WalletTransaction({
 				userId: levels[i].userId,
 				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 				credit: commission,
-				balance: lastTransaction
-					? lastTransaction.balance + commission
-					: commission,
+				balance: lastTransaction ? lastTransaction.balance + commission : commission,
 				transactionType: "Level Commission",
 				reference: `Level ${i + 1}`,
 				referenceId: levels[i].userId,
@@ -162,21 +144,9 @@ async function handleLevelCommission(sharedId, commissionLevel) {
 }
 
 const createLevel = asyncHandler(async (req, res) => {
-	const {
-		levelFirst,
-		levelSecond,
-		levelThird,
-		firstPartyCommission,
-		secondPartyCommission,
-	} = req.body;
+	const { levelFirst, levelSecond, levelThird, firstPartyCommission, secondPartyCommission } = req.body;
 
-	const newLevel = new Level({
-		levelFirst,
-		levelSecond,
-		levelThird,
-		firstPartyCommission,
-		secondPartyCommission,
-	});
+	const newLevel = new Level({ levelFirst, levelSecond, levelThird, firstPartyCommission, secondPartyCommission });
 
 	const createdLevel = await newLevel.save();
 	res.status(201).json(createdLevel);
@@ -198,14 +168,7 @@ const getLevelById = asyncHandler(async (req, res) => {
 });
 
 const updateLevel = asyncHandler(async (req, res) => {
-	const {
-		id,
-		levelFirst,
-		levelSecond,
-		levelThird,
-		firstPartyCommission,
-		secondPartyCommission,
-	} = req.body;
+	const { id, levelFirst, levelSecond, levelThird, firstPartyCommission, secondPartyCommission, } = req.body;
 
 	const level = await Level.findById(id);
 
@@ -213,10 +176,8 @@ const updateLevel = asyncHandler(async (req, res) => {
 		level.levelFirst = levelFirst || level.levelFirst;
 		level.levelSecond = levelSecond || level.levelSecond;
 		level.levelThird = levelThird || level.levelThird;
-		level.firstPartyCommission =
-			firstPartyCommission || level.firstPartyCommission;
-		level.secondPartyCommission =
-			secondPartyCommission || level.secondPartyCommission;
+		level.firstPartyCommission = firstPartyCommission || level.firstPartyCommission;
+		level.secondPartyCommission = secondPartyCommission || level.secondPartyCommission;
 
 		const updatedLevel = await level.save();
 		res.json(updatedLevel);
@@ -335,6 +296,21 @@ const getProductsByUserId = asyncHandler(async (req, res) => {
 	(!products.length) ? res.status(200).json('No product found') : res.status(200).json(products);
 });
 
+//get product grab  by user id
+const getGrabCount = asyncHandler(async (req, res) => {
+	try {
+		const userId = req?.user?.userId || req?.query?.user_id;
+		if (!userId) {
+			res.status(200).json("user Id not Found ");
+		} else {
+			const grabCountDtl = await ShareCount.findOne({ userId });
+			res.status(200).json({ grabCountDtl: grabCountDtl });
+		}
+	} catch (error) {
+		throw new ApiError(500, error);
+	}
+});
+
 export {
 	grabProduct,
 	createLevel,
@@ -343,4 +319,5 @@ export {
 	deleteLevel,
 	userShareCount,
 	getProductsByUserId,
+	getGrabCount
 };
