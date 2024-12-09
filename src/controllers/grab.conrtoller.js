@@ -38,7 +38,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 			countDetails.grabCount = 0; // Reset call count
 		}
 
-		const filteredProduct = productList?.filter((itm) => itm?.level == req?.user?.activePlan?.title || global?.activePlan?.title);
+		const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
 		// Access the random product from the array
 		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
 		let savedProduct = null;
