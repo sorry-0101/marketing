@@ -20,22 +20,17 @@ const grabProduct = asyncHandler(async (req, res) => {
 
 		const productList = await Product.find({});
 		let countDetails = await ShareCount.findOne({ userId });
-		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
-			_id: -1,
-		});
-		// const PlanDetails = await Plan.find({});
-		// console.log("countDetails", countDetails);
+		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 
-		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo) || 10,
+		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo),
 			directCommissionPercentage = (req?.user?.activePlan?.commission || global?.activePlan?.commission) / maxCallsPerDay;
 
 		const today = moment().startOf("day");
 
 		// Check if the user's call count needs resetting (if the last call was not today)
-		if (
-			!countDetails?.callDate || moment(countDetails?.callDate).isBefore(today)
-		) {
+		if (!countDetails?.callDate || moment(countDetails?.callDate).isBefore(today)) {
 			countDetails.grabCount = 0; // Reset call count
+			countDetails.grabCountLeft = maxCallsPerDay; // Reset grabs left to plan limit
 		}
 
 		const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
@@ -63,6 +58,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 					);
 					// Increment the user's call count
 					countDetails.grabCount += 1;
+					countDetails.grabCountLeft -= 1;
 					countDetails.callDate = new Date();
 					await countDetails.save();
 				} catch (error) {
@@ -303,7 +299,9 @@ const getGrabCount = asyncHandler(async (req, res) => {
 		if (!userId) {
 			res.status(200).json("user Id not Found ");
 		} else {
-			const grabCountDtl = await ShareCount.findOne({ userId });
+			const grabCountDtl = await ShareCount.findOne({ userId }).sort({
+				_id: -1,
+			});
 			res.status(200).json({ grabCountDtl: grabCountDtl });
 		}
 	} catch (error) {

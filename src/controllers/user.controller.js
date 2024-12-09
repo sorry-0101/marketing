@@ -240,20 +240,12 @@ const loginUser = asyncHandler(async (req, res) => {
 	);
 	console.log(loggedInUser)
 	const userId = loggedInUser.userId,
-		walletDetails = await WalletTransaction.findOne({ userId }).sort({
-			_id: -1,
-		}),
+		walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1, }),
 		childUsers = await getUsersLevel(loggedInUser.userId),
 		plans = await Plan.find({}),
-		shareCountDetails = (await ShareCount.findOne({ userId })) || {
-			shareCount: 0,
-		};
-	const currentlyActivePlan = plans?.find(
-		(itm) =>
-			itm.price <= walletDetails?.balance &&
-			itm?.shareLimit <= shareCountDetails?.shareCount
-	);
+		shareCountDetails = await ShareCount.findOne({ userId }).sort({ _id: -1, }) || { shareCount: 0 };
 
+	const currentlyActivePlan = plans?.find((itm) => itm.price <= walletDetails?.balance && itm?.shareLimit <= shareCountDetails?.shareCount);
 	req.user = loggedInUser;
 
 	const UserActivePlan = {

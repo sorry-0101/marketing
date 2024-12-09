@@ -33,6 +33,10 @@ const shareCount = new Schema({
 		type: Number,
 		default: 0,
 	},
+	grabCountLeft: {
+		type: Number,
+		default: 0,
+	},
 });
 
 const WalletTransactionSchema = new Schema(
