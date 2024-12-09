@@ -19,7 +19,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 		const sharedId = req.user.sharedId || req.query.shared_id;
 
 		const productList = await Product.find({});
-		let countDetails = await ShareCount.findOne({ userId });
+		let countDetails = await ShareCount.findOne({ userId }).sort({ _id: -1 });
 		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 
 		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo),
@@ -30,7 +30,11 @@ const grabProduct = asyncHandler(async (req, res) => {
 		// Check if the user's call count needs resetting (if the last call was not today)
 		if (!countDetails?.callDate || moment(countDetails?.callDate).isBefore(today)) {
 			countDetails.grabCount = 0; // Reset call count
+		}
+
+		if (!countDetails?.grabCount) {
 			countDetails.grabCountLeft = maxCallsPerDay; // Reset grabs left to plan limit
+			await countDetails.save();
 		}
 
 		const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
