@@ -32,16 +32,24 @@ const grabProduct = asyncHandler(async (req, res) => {
 			countDetails.grabCount = 0; // Reset call count
 		}
 
-		if (!countDetails?.grabCount) {
+		if (!countDetails?.grabCount && moment(countDetails?.callDate).isBefore(today)) {
 			countDetails.grabCountLeft = maxCallsPerDay; // Reset grabs left to plan limit
 			await countDetails.save();
 		}
 
-		const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
+		const TOLERANCE = 15; // Define a tolerance range for "near balance"
+
+		const filteredProduct = productList?.filter((itm) => {
+			const balanceThreshold = lastTransaction?.balance - 10;
+			return itm?.price < balanceThreshold && itm?.price >= balanceThreshold - TOLERANCE;
+		});
+
+		// const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
+
 		// Access the random product from the array
 		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
 		let savedProduct = null;
-		if (countDetails?.grabCount < maxCallsPerDay) {
+		if (countDetails?.grabCount < 4) {
 			if (lastTransaction) {
 				try {
 					const commission = lastTransaction?.balance * (directCommissionPercentage / 100);
