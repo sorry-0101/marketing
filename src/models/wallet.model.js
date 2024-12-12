@@ -61,6 +61,10 @@ const WalletTransactionSchema = new Schema(
 		balance: {
 			type: Number,
 		},
+		commission: {
+			type: Number,
+			default: 0
+		},
 		transactionType: {
 			type: String, // Deposit, Withdrawal, Direct Commission, etc.
 		},

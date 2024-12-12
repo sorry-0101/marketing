@@ -57,6 +57,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 						credit: commission,
+						commission: lastTransaction ? lastTransaction.commission + commission : commission,
 						balance: lastTransaction ? lastTransaction.balance + commission : commission,
 						transactionType: "Direct Grab Commission",
 						reference: "Daily Grab",

@@ -55,7 +55,7 @@ const getUsersLevel = async (
 
 const getTeamDataByDate = asyncHandler(async (req, res) => {
 	try {
-		const userId = req.user.userId || req.query.user_id;
+		const userId = req.query.user_id;
 		// Parse start and end dates and adjust for the entire day
 		const startDate = moment(req.query.start_date, "YYYY-MM-DD").startOf("day").toDate();
 		const endDate = moment(req.query.end_date, "YYYY-MM-DD").endOf("day").toDate();
@@ -76,7 +76,7 @@ const getTeamDataByDate = asyncHandler(async (req, res) => {
 					debit: { $sum: "$debit" },
 					// withdraw: { $sum: "$withdraw" }, //  withdraw field exists
 					firstDeposit: { $first: "$credit" }, // For first-time deposit
-					// commission: { $sum: "$commission" }, //  commission field exists
+					commission: { $sum: "$commission" }, //  commission field exists
 					createdAt: { $first: "$createdAt" }
 				},
 			},
