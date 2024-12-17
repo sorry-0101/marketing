@@ -149,7 +149,6 @@ router.route("/updateslider").post(
 	updateSliderImage
 );
 // Route to delete event records, protected by JWT verification
-// router.delete('/deleteslider', deleteSliderImage);
 router.route("/deleteslider").delete(verifyJWT, deleteSliderImage);
 
 // Route to add an plan, protected by JWT verification
@@ -199,19 +198,6 @@ router.route("/updateCountries").post(verifyJWT, updateCountry);
 // @desc Delete a country
 router.route("/deleteCountries").delete(verifyJWT, deleteCountry);
 
-// Admin Routes
-
-// router.route('sendMessage/:id').post(verifyJWT, sendAdminMessage);
-// router.route("/sendMessage").post(
-//   verifyJWT,
-//   upload.fields([
-//     {
-//       name: "chatImg",
-//       maxCount: 1,
-//     },
-//   ]),
-//   sendAdminMessage
-// );
 router.post("/sendMessageAdmin", upload.single("chatImg"), sendAdminMessage);
 // router.route("/getMessages/:id").get(verifyJWT, getAdminMessages);
 // router.route("/getMessages/:id").get(getAdminMessages);

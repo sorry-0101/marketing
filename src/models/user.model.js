@@ -166,14 +166,6 @@ const messageSchema = new Schema(
 			ref: "User",
 			required: true,
 		},
-		// receiver: {
-		//   type: Schema.Types.ObjectId, // Use ObjectId for receiver as well
-		//   ref: "User",
-		//   required: true, // Make it required if every message must have a receiver
-		// },
-		// userId: { // Uncomment if necessary, but clarify its purpose
-		//   type: String,
-		// },
 		isAdmin: {
 			type: Boolean,
 			default: false,
@@ -192,12 +184,7 @@ const messageSchema = new Schema(
 
 const notificationSchema = new mongoose.Schema(
 	{
-		// userId: {
-		//   type: String,
-		//   required: true,
-		// },
 		message: { type: String, required: true },
-		//   data: { type: Object },
 		createdAt: { type: Date, default: Date.now },
 		// read: { type: Boolean, default: false }, // To mark if notification has been read
 		readBy: { type: String },
@@ -207,13 +194,7 @@ const notificationSchema = new mongoose.Schema(
 
 // Export the User model, which will be used to interact with the 'users' collection in MongoDB
 export const User = mongoose.model("User", userSchema);
-export const withdrawalRequestAmount = mongoose.model(
-	"withdrawalRequestAmount",
-	withdrawalRequestSchema
-);
-export const addressSchemaWithdrawal = mongoose.model(
-	"addressSchema",
-	addressSchema
-);
+export const withdrawalRequestAmount = mongoose.model("withdrawalRequestAmount", withdrawalRequestSchema);
+export const addressSchemaWithdrawal = mongoose.model("addressSchema", addressSchema);
 export const Message = mongoose.model("Message", messageSchema);
 export const Notification = mongoose.model("Notification", notificationSchema);

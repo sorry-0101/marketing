@@ -7,14 +7,11 @@ import {
 	Message,
 	Notification,
 } from "../models/user.model.js";
-import { Wallet, WalletTransaction } from "../models/wallet.model.js";
-
+import { WalletTransaction, ShareCount } from "../models/wallet.model.js";
 import { Plan, Events } from "../models/admin.model.js";
-import { ShareCount } from "../models/wallet.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import axios from "axios";
 import moment from "moment";
 
@@ -184,6 +181,7 @@ const registerUser = asyncHandler(async (req, res) => {
 			transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 			credit: 0,
 			balance: 0,
+			totalProfit: 0,
 			transactionType: "Opening Amount",
 			reference: `self`,
 			referenceId: _userId,
@@ -698,7 +696,7 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 	}
 
 	// Calculate final amount (95% of the requested amount)
-	const finalAmount = amount * 0.95;
+	const finalAmount = amount * 0.93;
 
 	// Retrieve the last transaction for this user to get the current balance
 	const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
@@ -716,13 +714,20 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 	}
 
 	// Calculate the new balance after the withdrawal
-	const updatedBalance = lastTransaction.balance - finalAmount;
+	const updatedProfitBalance = lastTransaction.totalProfit - finalAmount;
 
 	// Check if the balance is sufficient for the withdrawal
-	if (updatedBalance < 0) {
+	if (lastTransaction?.totalProfit < finalAmount) {
 		return res
 			.status(400)
-			.json(new ApiResponse(400, null, "Insufficient balance"));
+			.json(new ApiResponse(400, null, "Insufficient profit balance"));
+	}
+
+	// Check if the balance is sufficient for the withdrawal
+	if (lastTransaction?.totalProfit > 50) {
+		return res
+			.status(400)
+			.json(new ApiResponse(400, null, "Can't withdraw the money. Total profit is less then 50."));
 	}
 
 	// Create a new withdrawal request
@@ -741,7 +746,8 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 		transactionId: generateTransactionId(),
 		credit: 0, // No credit since this is a withdrawal
 		debit: finalAmount, // Amount being withdrawn
-		balance: updatedBalance, // Updated balance after withdrawal
+		balance: updatedProfitBalance ? lastTransaction?.balance - updatedProfitBalance : lastTransaction?.balance, // Updated balance after withdrawal
+		totalProfit: updatedProfitBalance ? updatedProfitBalance : lastTransaction?.totalProfit,
 		transactionType: "Withdrawal",
 		reference: "User Withdrawal",
 		referenceId: withdrawalRequest._id,
@@ -755,7 +761,7 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 			200,
 			{
 				withdrawalRequest,
-				updatedBalance,
+				updatedBalance: updatedProfitBalance ? lastTransaction?.balance - updatedProfitBalance : lastTransaction?.balance,
 				transactionEntry,
 			},
 			"Withdrawal request submitted successfully"
@@ -997,30 +1003,6 @@ const getAllNotifications = asyncHandler(async (req, res) => {
 		);
 });
 
-// const getAllNotifications = asyncHandler(async (req, res) => {
-//   //   const userId = req.params.userId;
-//   const userId = req.user.userId || req.query.user_id;
-
-//   // Fetch all notifications
-//   const notifications = await Notification.find().sort({ createdAt: -1 });
-
-//   // Mark all unread notifications as read by adding userId to `readBy` array
-//   await Notification.updateMany(
-//     { readBy: { $ne: userId } }, // Find notifications the user hasn't read
-//     { $addToSet: { readBy: userId } } // Add userId as a string to `readBy` array
-//   );
-
-//   return res
-//     .status(200)
-//     .json(
-//       new ApiResponse(
-//         200,
-//         notifications,
-//         "Notifications fetched and marked as read"
-//       )
-//     );
-// });
-
 const getUserUnreadMessageCount = asyncHandler(async (req, res) => {
 	const userId = req.query.userId; // Get the user ID from the query
 
@@ -1068,117 +1050,3 @@ export {
 	getAllNotifications,
 	getUserUnreadMessageCount,
 };
-
-// const getUserMessages = asyncHandler(async (req, res) => {
-//   const userId = req.user.userId || req.query.user_id; // Get user ID from request parameters
-
-//   const messages = await Message.find({
-//     $or: [
-//       { sender: userId, receiver: req.user.adminId, isAdmin: false }, // User's messages to Admin
-//       { sender: req.user.adminId, receiver: userId, isAdmin: true }, // Admin's messages to User
-//     ],
-//   }).sort({ createdAt: 1 }); // Sort messages by created date
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, messages, "Messages retrieved successfully"));
-// });
-
-// const processWithdrawal = asyncHandler(async (req, res) => {
-//   const { userId, address, amount, username, mobile } = req.body;
-
-//   // Fields to validate
-//   const requiredFields = {
-//     userId: "User ID is required", // Include userId for validation
-//     address: "Wallet address is required",
-//     amount: "Amount is required",
-//     username: "Username is required",
-//     mobile: "Mobile number is required",
-//   };
-
-//   // Validate fields
-//   for (const [field, errorMessage] of Object.entries(requiredFields)) {
-//     if (!req.body[field]) {
-//       throw new ApiError(400, errorMessage);
-//     }
-//   }
-
-//   // Calculate final amount (95% of amount)
-//   const finalAmount = amount * 0.95;
-
-//   // Create a new withdrawal request
-//   const withdrawalRequest = await withdrawalRequestAmount.create({
-//     userId, // Include userId in the withdrawal request
-//     address,
-//     amount,
-//     finalAmount,
-//     username,
-//     mobile,
-//   });
-
-//   // Update the user's wallet balance
-//   //   const userWallet = await Wallet.findOne({ userId });
-
-//   //   if (!userWallet) {
-//   //     throw new ApiError(404, "User wallet not found");
-//   //   }
-
-//   // Deduct the final amount from the user's balance
-//   //   userWallet.walletAmount -= finalAmount;
-
-//   // Save the updated wallet
-//   //   const updatedWallet = await userWallet.save();
-
-//   const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
-//     _id: -1,
-//   });
-//   console.log("lastTransaction", lastTransaction);
-//   // Optionally, you can create a transaction entry for the withdrawal
-//   //   const transactionEntry = await WalletTransaction.create({
-//   //     userId,
-//   //     transactionId: generateTransactionId(),
-//   //     credit: 0,
-//   //     debit: finalAmount,
-//   //     balance: ,
-//   //     transactionType: "withdrawal",
-//   //     referenceId: withdrawalRequest._id,
-//   //     address,
-//   //     createdAt: new Date(),
-//   //   });
-
-//   // Send success response with updated balance
-//   return res.status(200).json(
-//     new ApiResponse(
-//       200,
-//       {
-//         withdrawalRequest,
-//         // updatedBalance: updatedWallet.walletAmount,
-//         transactionEntry,
-//       }, // Include the updated balance and transaction entry
-//       "Withdrawal request submitted successfully"
-//     )
-//   );
-// });
-
-// const getUsersLevel = async (userId, level = 1, maxLevel = 5) => {
-// 	try {
-// 		if (level > maxLevel) {
-// 			return []; // Stop recursion if we reach the max level
-// 		}
-// 		// Find all users directly sponsored by the given userId
-// 		const directReferrals = await User.find({ sharedId: userId });
-
-// 		let allReferrals = [...directReferrals];
-
-// 		// Recursively find referrals for each direct referral
-// 		for (let referral of directReferrals) {
-// 			const deeperReferrals = await getUsersLevel(referral.userId, level + 1, maxLevel);
-// 			allReferrals = allReferrals.concat(deeperReferrals); // Combine current level's referrals with deeper levels
-// 		}
-
-// 		return allReferrals;
-// 	} catch (error) {
-// 		throw error;
-// 	}
-
-// };

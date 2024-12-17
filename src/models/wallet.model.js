@@ -54,6 +54,10 @@ const WalletTransactionSchema = new Schema(
 			type: Number,
 			default: 0,
 		},
+		totalProfit: {
+			type: Number,
+			default: 0,
+		},
 		debit: {
 			type: Number,
 			default: 0,

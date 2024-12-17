@@ -48,17 +48,31 @@ const grabProduct = asyncHandler(async (req, res) => {
 
 		// Access the random product from the array
 		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
+
+		if (!product) {
+			return res
+				.status(200)
+				.json(
+					new ApiResponse(
+						200,
+						{},
+						"No product found in at this price range"
+					)
+				);
+		}
+
 		let savedProduct = null;
 		if (countDetails?.grabCount < 4) {
 			if (lastTransaction) {
 				try {
-					const commission = lastTransaction?.balance * (directCommissionPercentage / 100);
+					const commission = totalProfit = lastTransaction?.balance * (directCommissionPercentage / 100);
 					const transaction = new WalletTransaction({
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 						credit: commission,
 						commission: lastTransaction ? lastTransaction.commission + commission : commission,
 						balance: lastTransaction ? lastTransaction.balance + commission : commission,
+						totalProfit: lastTransaction ? lastTransaction?.totalProfit + totalProfit : totalProfit,
 						transactionType: "Direct Grab Commission",
 						reference: "Daily Grab",
 					});
@@ -134,7 +148,7 @@ async function handleLevelCommission(sharedId, commissionLevel) {
 
 	for (let i = 0; i < levels.length; i++) {
 		if (levels[i]) {
-			const commission = commissionLevel * (parseInt(levelCommissions[i]) / 100);
+			const commission = totalProfit = commissionLevel * (parseInt(levelCommissions[i]) / 100);
 			const lastTransaction = await WalletTransaction.findOne({ userId: levels[i].userId, }).sort({ _id: -1 });
 			// console.log("commission", commission);
 			const transaction = new WalletTransaction({
@@ -142,6 +156,7 @@ async function handleLevelCommission(sharedId, commissionLevel) {
 				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 				credit: commission,
 				balance: lastTransaction ? lastTransaction.balance + commission : commission,
+				totalProfit: lastTransaction ? lastTransaction.totalProfit + totalProfit : totalProfit,
 				transactionType: "Level Commission",
 				reference: `Level ${i + 1}`,
 				referenceId: levels[i].userId,
