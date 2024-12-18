@@ -37,14 +37,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 			await countDetails.save();
 		}
 
-		const TOLERANCE = 15; // Define a tolerance range for "near balance"
-
-		const filteredProduct = productList?.filter((itm) => {
-			const balanceThreshold = lastTransaction?.balance - 10;
-			return itm?.price < balanceThreshold && itm?.price >= balanceThreshold - TOLERANCE;
-		});
-
-		// const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
+		const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
 
 		// Access the random product from the array
 		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
@@ -62,16 +55,17 @@ const grabProduct = asyncHandler(async (req, res) => {
 		}
 
 		let savedProduct = null;
-		if (countDetails?.grabCount < 4) {
+		if (countDetails?.grabCount < maxCallsPerDay) {
 			if (lastTransaction) {
 				try {
-					const commission = totalProfit = lastTransaction?.balance * (directCommissionPercentage / 100);
+					const commission = lastTransaction?.balance * (directCommissionPercentage / 100),
+						totalProfit = commission;
 					const transaction = new WalletTransaction({
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 						credit: commission,
-						commission: lastTransaction ? lastTransaction.commission + commission : commission,
-						balance: lastTransaction ? lastTransaction.balance + commission : commission,
+						commission: lastTransaction ? lastTransaction?.commission + commission : commission,
+						balance: lastTransaction ? lastTransaction?.balance + commission : commission,
 						totalProfit: lastTransaction ? lastTransaction?.totalProfit + totalProfit : totalProfit,
 						transactionType: "Direct Grab Commission",
 						reference: "Daily Grab",
@@ -148,7 +142,8 @@ async function handleLevelCommission(sharedId, commissionLevel) {
 
 	for (let i = 0; i < levels.length; i++) {
 		if (levels[i]) {
-			const commission = totalProfit = commissionLevel * (parseInt(levelCommissions[i]) / 100);
+			const commission = commissionLevel * (parseInt(levelCommissions[i]) / 100),
+				totalProfit = commission;
 			const lastTransaction = await WalletTransaction.findOne({ userId: levels[i].userId, }).sort({ _id: -1 });
 			// console.log("commission", commission);
 			const transaction = new WalletTransaction({
