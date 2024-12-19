@@ -37,7 +37,21 @@ const grabProduct = asyncHandler(async (req, res) => {
 			await countDetails.save();
 		}
 
-		const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
+		// Check if it's a new day or dailyInitialBalance is not set
+		if (!countDetails?.dailyInitialBalance || moment(countDetails?.callDate).isBefore(today)) {
+			countDetails.dailyInitialBalance = lastTransaction?.balance || 0; // Initialize with last transaction balance
+			countDetails.callDate = new Date(); // Update to today's date
+			await countDetails.save(); // Save the updated countDetails
+		}
+
+		const TOLERANCE = 15; // Define a tolerance range for "near balance"
+
+		const filteredProduct = productList?.filter((itm) => {
+			const balanceThreshold = lastTransaction?.balance - 10;
+			return itm?.price < balanceThreshold && itm?.price >= balanceThreshold - TOLERANCE;
+		});
+
+		// const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
 
 		// Access the random product from the array
 		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
@@ -58,7 +72,9 @@ const grabProduct = asyncHandler(async (req, res) => {
 		if (countDetails?.grabCount < maxCallsPerDay) {
 			if (lastTransaction) {
 				try {
-					const commission = lastTransaction?.balance * (directCommissionPercentage / 100),
+					// Use dailyInitialBalance for commission calculation
+					const commission = countDetails.dailyInitialBalance * (directCommissionPercentage / 100),
+						// const commission = lastTransaction?.balance * (directCommissionPercentage / 100),
 						totalProfit = commission;
 					const transaction = new WalletTransaction({
 						userId: userId,

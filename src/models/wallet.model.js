@@ -37,6 +37,11 @@ const shareCount = new Schema({
 		type: Number,
 		default: 0,
 	},
+	dailyInitialBalance: {
+		type: Number,
+		default: 0,
+	},
+
 });
 
 const WalletTransactionSchema = new Schema(
