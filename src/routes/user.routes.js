@@ -25,7 +25,7 @@ import {
 	getAllNotifications,
 	getUserUnreadMessageCount,
 } from "../controllers/user.controller.js";
-import { getPlans } from "../controllers/admin.controller.js";
+import { getPlans, getCountries } from "../controllers/admin.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js"; // Middleware for verifying JWT
 import { upload } from "../middlewares/multer.middleware.js"; // Middleware for handling file uploads
 
@@ -82,12 +82,8 @@ router.route("/getwithdrawalrequest").get(verifyJWT, getAllWithdrawals);
 router.route("/withdrawalAdderss").post(verifyJWT, saveWithdralAddress);
 router.route("/getWithdrawalAddress").get(verifyJWT, getWalletAddress);
 
-router
-	.route("/withdrawalrequest/status")
-	.post(verifyJWT, updateWithdrawalStatus);
-router
-	.route("/withdrawalrequest/delete")
-	.delete(verifyJWT, deleteWithdrawalRequest);
+router.route("/withdrawalrequest/status").post(verifyJWT, updateWithdrawalStatus);
+router.route("/withdrawalrequest/delete").delete(verifyJWT, deleteWithdrawalRequest);
 
 //otp
 router.route("/sendOtp").post(sendOtp);
@@ -98,22 +94,16 @@ router.route("/sendOtp").post(sendOtp);
 // router.route("/receiveMoney").post(verifyJWT, receiveMoney);
 
 // User Routes
-router.post(
-	"/sendMessage",
-
-	upload.single("chatImg"),
-	sendUserMessage
-);
+router.post("/sendMessage", upload.single("chatImg"), sendUserMessage);
 
 router.route("/getMessages").get(getUserMessages);
 
 router.route("/deleteMessage").delete(verifyJWT, deleteUserMessage);
 router.route("/getUserLevel").get(verifyJWT, getUserLevel);
 router.route("/getPlanRecordsUser").get(verifyJWT, getPlans);
-router
-	.route("/getUnreadNotificationCount")
-	.get(verifyJWT, getUnreadNotificationCount);
+router.route("/getUnreadNotificationCount").get(verifyJWT, getUnreadNotificationCount);
 router.route("/getAllNotifications").get(verifyJWT, getAllNotifications);
 router.route("/getUserUnreadMessageCount").get(getUserUnreadMessageCount);
 
+router.route("/getCountryUser").get(getCountries);
 export default router; // Export the router for use in the app
