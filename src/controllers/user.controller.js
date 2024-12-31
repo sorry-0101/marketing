@@ -162,8 +162,8 @@ const registerUser = asyncHandler(async (req, res) => {
 				const totalShareCount = shareCount.totalShareCount + 1;
 				const updatedShareCount = shareCount.shareCount + 1;
 
-				await ShareCount.findOneAndUpdate(
-					{ sharedId },
+				const result = await ShareCount.findOneAndUpdate(
+					{ userId: sharedId },
 					{
 						$set: {
 							shareCount: updatedShareCount, // Update the share count
@@ -283,6 +283,7 @@ const loginUser = asyncHandler(async (req, res) => {
 					user: loggedInUser,
 					activePlan: currentlyActivePlan,
 					walletDetails: walletDetails,
+					shareCountDetails: shareCountDetails,
 					accessToken,
 				},
 				"User logged In Successfully"
