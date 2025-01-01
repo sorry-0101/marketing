@@ -916,13 +916,21 @@ const getUserLevel = asyncHandler(async (req, res) => {
 		});
 		const plans = await Plan.find({});
 		const shareCountDetails = await ShareCount.findOne({ userId });
-		const activePlan = plans?.find((plan) => {
-			//   console.log("Checking plan:", plan);
+		const eligiblePlans = plans?.filter((plan) => {
 			return (
 				plan.price <= (walletDetails?.balance || 0) &&
 				plan.shareLimit <= (shareCountDetails?.shareCount || 0)
 			);
 		});
+
+		const sortedPlans = eligiblePlans?.sort((a, b) => b.price - a.price);
+		const activePlan = sortedPlans?.[0] || null;
+		// console.log("activePlan",activePlan);
+
+		// const activePlan = plans?.find((plan) => {
+		//     console.log("Checking plan:", plan);
+		//   return (plan.price <= (walletDetails?.balance || 0) && plan.shareLimit <= (shareCountDetails?.shareCount || 0));
+		// });
 		return res.status(200).json({
 			success: true,
 			message: "User level retrieved successfully",

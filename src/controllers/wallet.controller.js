@@ -251,7 +251,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 		await transaction.save();
 
 		// Check if this is the first non-zero deposit and amount is greater than 100
-		if (transactions.length === 0 && depositAmount > 100) {
+		if (transactions.length === 0 && depositAmount >= 100) {
 			const bonus = depositAmount * 0.05; // 5% bonus
 
 			// Add bonus for the user
