@@ -909,40 +909,70 @@ const deleteUserMessage = asyncHandler(async (req, res) => {
 // Get user Level for the user
 const getUserLevel = asyncHandler(async (req, res) => {
 	try {
-		const userId = req.user.userId || req.query.user_id;
+		const userId = req?.user?.userId || req?.query?.user_id;
 
-		const walletDetails = await WalletTransaction.findOne({ userId }).sort({
-			_id: -1,
-		});
+		if (!userId) {
+			return res.status(404).json({
+				success: false,
+				message: "userId not found",
+			});
+		}
+
+		const user = await User.findOne({ userId });
+
+		if (!user) {
+			return res.status(404).json({
+				success: false,
+				message: "User not found",
+			});
+		}
+
+		const sharedId = user?.sharedId;
+		const relatedUsers = await User.find({ sharedId });
+		const relatedUserIds = relatedUsers?.map((u) => u?.userId);
+
+		const walletBalances = await Promise.all(
+			relatedUserIds?.map(async (id) => {
+				const walletDetails = await WalletTransaction.findOne({ userId: id }).sort({ _id: -1 });
+				return {
+					userId: id,
+					walletBalance: walletDetails?.balance || 0,
+				};
+			})
+		);
+
+		const walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 		const plans = await Plan.find({});
-		const shareCountDetails = await ShareCount.findOne({ userId });
+
+		const shareCount = walletBalances.filter((wallet) => wallet?.walletBalance > 100)?.length;
+		// console.log("shareCount",shareCount);
 		const eligiblePlans = plans?.filter((plan) => {
+
 			return (
 				plan.price <= (walletDetails?.balance || 0) &&
-				plan.shareLimit <= (shareCountDetails?.shareCount || 0)
+				plan.shareLimit <= shareCount
 			);
 		});
 
-		const sortedPlans = eligiblePlans?.sort((a, b) => b.price - a.price);
+		const sortedPlans = eligiblePlans?.sort((a, b) => b?.price - a?.price);
+		console.log("sortedPlans", sortedPlans);
 		const activePlan = sortedPlans?.[0] || null;
-		// console.log("activePlan",activePlan);
 
-		// const activePlan = plans?.find((plan) => {
-		//     console.log("Checking plan:", plan);
-		//   return (plan.price <= (walletDetails?.balance || 0) && plan.shareLimit <= (shareCountDetails?.shareCount || 0));
-		// });
+
+
 		return res.status(200).json({
 			success: true,
 			message: "User level retrieved successfully",
 			data: {
 				userId,
 				walletBalance: walletDetails?.balance || 0,
-				shareCount: shareCountDetails?.shareCount || 0,
+				shareCount,
 				activePlan: activePlan || null,
+				// relatedUserIds,
+				walletBalances,
 			},
 		});
 	} catch (error) {
-		console.error("Error retrieving user level:", error);
 		return res.status(500).json({
 			success: false,
 			message: "Failed to retrieve user level",

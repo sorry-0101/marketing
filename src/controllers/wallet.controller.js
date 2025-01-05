@@ -212,8 +212,8 @@ const generateTransactionId = () => {
 
 const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 	try {
-		const { deposit_amount: depositAmount } = req.body;
-		const userId = req.query.userId;
+		const { deposit_amount: depositAmount } = req?.body;
+		const userId = req?.query?.userId;
 
 		// Get the sharedId of the user
 		const user = await User.findOne({ userId }).select("sharedId");
@@ -228,12 +228,10 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 		const transactions = await WalletTransaction.find({
 			userId,
 			$or: [{ credit: { $ne: 0 } }, { debit: { $ne: 0 } }],
-		})
-			.sort({ createdAt: -1 })
-			.select("-__v");
+		}).sort({ createdAt: -1 }).select("-__v");
 
 		// Calculate the current balance
-		const balance = transactions.length > 0 ? transactions[0].balance : 0;
+		const balance = transactions?.length > 0 ? transactions?.[0]?.balance : 0;
 		const newBalance = balance + parseInt(depositAmount);
 
 		// Create a new transaction for the deposit
@@ -242,7 +240,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 			transactionId: generateTransactionId(),
 			credit: parseInt(depositAmount),
 			balance: newBalance,
-			totalProfit: transactions ? transactions?.totalProfit : 0,
+			totalProfit: transactions?.length ? transactions?.totalProfit : 0,
 			transactionType: "Deposit",
 			reference: "Admin Deposit",
 			referenceId: userId,
@@ -251,7 +249,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 		await transaction.save();
 
 		// Check if this is the first non-zero deposit and amount is greater than 100
-		if (transactions.length === 0 && depositAmount >= 100) {
+		if (transactions?.length === 0 && depositAmount >= 100) {
 			const bonus = depositAmount * 0.05; // 5% bonus
 
 			// Add bonus for the user
@@ -260,7 +258,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 				transactionId: generateTransactionId(),
 				credit: bonus,
 				balance: newBalance + bonus,
-				totalProfit: transactions ? transactions?.totalProfit + bonus : bonus,
+				totalProfit: transactions?.length ? transactions?.totalProfit + bonus : bonus,
 				transactionType: "Bonus",
 				reference: "First Time Deposit Bonus",
 				referenceId: userId,
@@ -272,11 +270,8 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 				const level1Transactions = await WalletTransaction.find({
 					userId: shareId,
 					$or: [{ credit: { $ne: 0 } }, { debit: { $ne: 0 } }],
-				})
-					.sort({ createdAt: -1 })
-					.select("-__v");
-				const level1Balance =
-					level1Transactions.length > 0 ? level1Transactions[0].balance : 0;
+				}).sort({ createdAt: -1 }).select("-__v");
+				const level1Balance = level1Transactions?.length > 0 ? level1Transactions?.[0]?.balance : 0;
 
 				const level1Bonus = depositAmount * 0.05; // 5% bonus for Level 1 user
 
@@ -285,7 +280,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 					transactionId: generateTransactionId(),
 					credit: level1Bonus,
 					balance: level1Balance + level1Bonus,
-					totalProfit: transactions ? transactions?.totalProfit + level1Bonus : level1Bonus,
+					totalProfit: transactions?.length ? transactions?.totalProfit + level1Bonus : level1Bonus,
 					transactionType: "Level 1 Bonus",
 					reference: "Level 1 User Bonus",
 					referenceId: userId,
@@ -303,7 +298,6 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 				)
 			);
 	} catch (error) {
-		console.error("Error:", error.message);
 		throw new ApiError(400, error.message || "Something went wrong");
 	}
 });
@@ -327,12 +321,9 @@ const getWalletBalanceUser = asyncHandler(async (req, res) => {
 			.select("-__v"); // Exclude the __v field
 
 		// If there are no transactions, the balance will be the wallet amount
-		const balance =
-			transactions.length > 0
-				? transactions[0].balance // Last transaction's balance
-				: wallet
-					? wallet.walletAmount
-					: 0;
+		const balance = transactions?.length > 0
+			? transactions?.[0]?.balance // Last transaction's balance
+			: wallet ? wallet?.walletAmount : 0;
 
 		return res.status(200).json({
 			statusCode: 200,
