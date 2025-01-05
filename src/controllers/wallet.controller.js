@@ -24,9 +24,9 @@ const depositAmount = asyncHandler(async (req, res) => {
 				userId: userId,
 				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 				credit: depositAmount,
-				balance: lastTransaction ? lastTransaction.balance + depositAmount : depositAmount,
+				balance: lastTransaction?.length ? lastTransaction?.balance + depositAmount : depositAmount,
 				transactionType: "Credit Amount",
-				totalProfit: lastTransaction ? lastTransaction?.totalProfit : 0,
+				totalProfit: lastTransaction?.length ? lastTransaction?.totalProfit : 0,
 				reference: `self`,
 				referenceId: userId,
 			});
@@ -36,9 +36,9 @@ const depositAmount = asyncHandler(async (req, res) => {
 				userId: userId,
 				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 				credit: depositAmount,
-				balance: lastTransaction ? lastTransaction.balance + depositAmount : depositAmount,
+				balance: lastTransaction?.length ? lastTransaction.balance + depositAmount : depositAmount,
 				transactionType: "Credit Amount",
-				totalProfit: lastTransaction ? lastTransaction?.totalProfit : 0,
+				totalProfit: lastTransaction?.length ? lastTransaction?.totalProfit : 0,
 				reference: `self`,
 				referenceId: userId,
 			});
