@@ -18,12 +18,33 @@ const grabProduct = asyncHandler(async (req, res) => {
 		const userId = req.user.userId || req.query.user_id;
 		const sharedId = req.user.sharedId || req.query.shared_id;
 
-		const productList = await Product.find({});
-		let countDetails = await ShareCount.findOne({ userId }).sort({ _id: -1 });
-		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
+		if (!userId) {
+			return res.status(404).json({
+				success: false,
+				message: "userId not found",
+			});
+		}
 
-		const maxCallsPerDay = req?.user?.activePlan?.grabNo || parseInt(global?.activePlan?.grabNo),
-			directCommissionPercentage = (req?.user?.activePlan?.commission || global?.activePlan?.commission) / maxCallsPerDay;
+		const [relatedUserIds, userLastTransaction, plans, productList, countDetails] = await Promise.all([
+			User.find({ sharedId: userId }, 'userId').then(users => users.map(user => user.userId)),
+			WalletTransaction.findOne({ userId }).sort({ _id: -1 }),
+			Plan.find({}),
+			Product.find({}),
+			ShareCount.findOne({ userId }).sort({ _id: -1 })
+		]);
+
+		const sharedUserWalletBalances = await Promise.all(
+			relatedUserIds?.map(async (id) => {
+				const walletDetails = await WalletTransaction.findOne({ userId: id }).sort({ _id: -1 });
+				return { userId: id, walletBalance: walletDetails?.balance || 0, };
+			})
+		);
+
+		const shareCount = sharedUserWalletBalances?.filter((wallet) => wallet?.walletBalance > 100)?.length;
+		const activePlan = plans?.filter((plan) => (plan?.price <= (userLastTransaction?.balance || 0) && plan?.shareLimit <= shareCount))?.sort((a, b) => b?.price - a?.price)?.[0] || null;
+
+		const maxCallsPerDay = parseInt(activePlan?.grabNo),
+			directCommissionPercentage = (activePlan?.commission) / maxCallsPerDay;
 
 		const today = moment().startOf("day");
 
@@ -39,7 +60,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 
 		// Check if it's a new day or dailyInitialBalance is not set
 		if (!countDetails?.dailyInitialBalance || moment(countDetails?.callDate).isBefore(today)) {
-			countDetails.dailyInitialBalance = lastTransaction?.balance || 0; // Initialize with last transaction balance
+			countDetails.dailyInitialBalance = userLastTransaction?.balance || 0; // Initialize with last transaction balance
 			countDetails.callDate = new Date(); // Update to today's date
 			await countDetails.save(); // Save the updated countDetails
 		}
@@ -47,7 +68,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 		const TOLERANCE = 15; // Define a tolerance range for "near balance"
 
 		const filteredProduct = productList?.filter((itm) => {
-			const balanceThreshold = lastTransaction?.balance - 10;
+			const balanceThreshold = userLastTransaction?.balance - 10;
 			return itm?.price < balanceThreshold && itm?.price >= balanceThreshold - TOLERANCE;
 		});
 
@@ -70,7 +91,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 
 		let savedProduct = null;
 		if (countDetails?.grabCount < maxCallsPerDay) {
-			if (lastTransaction) {
+			if (userLastTransaction) {
 				try {
 					// Use dailyInitialBalance for commission calculation
 					const commission = countDetails.dailyInitialBalance * (directCommissionPercentage / 100),
@@ -80,9 +101,9 @@ const grabProduct = asyncHandler(async (req, res) => {
 						userId: userId,
 						transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 						credit: commission,
-						commission: lastTransaction ? lastTransaction?.commission + commission : commission,
-						balance: lastTransaction ? lastTransaction?.balance + commission : commission,
-						totalProfit: lastTransaction ? lastTransaction?.totalProfit + totalProfit : totalProfit,
+						commission: userLastTransaction ? userLastTransaction?.commission + commission : commission,
+						balance: userLastTransaction ? userLastTransaction?.balance + commission : commission,
+						totalProfit: userLastTransaction ? userLastTransaction?.totalProfit + totalProfit : totalProfit,
 						transactionType: "Direct Grab Commission",
 						reference: "Daily Grab",
 					});
@@ -98,6 +119,9 @@ const grabProduct = asyncHandler(async (req, res) => {
 					countDetails.grabCountLeft -= 1;
 					countDetails.callDate = new Date();
 					await countDetails.save();
+					var grabCountDtl = await ShareCount.findOne({ userId }).sort({
+						_id: -1,
+					});
 				} catch (error) {
 					throw new ApiError(400, error);
 				}
@@ -115,7 +139,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 		}
 		return res
 			.status(200)
-			.json(new ApiResponse(200, savedProduct, "product fetched successfully"));
+			.json(new ApiResponse(200, savedProduct, grabCountDtl, "product fetched successfully"));
 	} catch (error) {
 		throw new ApiError(400, error.message);
 	}

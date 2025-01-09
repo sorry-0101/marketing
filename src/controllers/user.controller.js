@@ -236,37 +236,16 @@ const loginUser = asyncHandler(async (req, res) => {
 	const loggedInUser = await User.findById(user._id).select(
 		"-password"
 	);
-	console.log(loggedInUser)
-	const userId = loggedInUser.userId,
-		walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1, }),
-		childUsers = await getUsersLevel(loggedInUser.userId),
-		plans = await Plan.find({}),
-		shareCountDetails = await ShareCount.findOne({ userId }).sort({ _id: -1, }) || { shareCount: 0 };
-
-	const currentlyActivePlan = plans?.find((itm) => itm.price <= walletDetails?.balance && itm?.shareLimit <= shareCountDetails?.shareCount);
+	const walletDetails = await WalletTransaction.findOne({ userId: loggedInUser?.userId }).sort({ _id: -1, });
 	req.user = loggedInUser;
-
-	const UserActivePlan = {
-		title: currentlyActivePlan?.title,
-		commission: currentlyActivePlan?.commission,
-		price: currentlyActivePlan?.price,
-		planImg: currentlyActivePlan?.planImg,
-		grabNo: currentlyActivePlan?.grabNo,
-		shareCount: currentlyActivePlan?.shareCount,
-		shareLimit: currentlyActivePlan?.shareLimit,
-	};
-
-	req.user.activePlan = UserActivePlan;
-	global.activePlan = UserActivePlan;
-
 	// Store user details in the global variable
 	global.logged_in_user = global.logged_in_user || {};
 	global.logged_in_user = {
-		userId: loggedInUser.userId,
-		userName: loggedInUser.username,
-		mobileNo: loggedInUser.mobileNo,
-		sharedId: loggedInUser.sharedId,
-		email: loggedInUser.email,
+		userId: loggedInUser?.userId,
+		userName: loggedInUser?.username,
+		mobileNo: loggedInUser?.mobileNo,
+		sharedId: loggedInUser?.sharedId,
+		email: loggedInUser?.email,
 	};
 
 	// Set HTTP-only and secure cookie options
@@ -281,9 +260,7 @@ const loginUser = asyncHandler(async (req, res) => {
 				200,
 				{
 					user: loggedInUser,
-					activePlan: currentlyActivePlan,
 					walletDetails: walletDetails,
-					shareCountDetails: shareCountDetails,
 					accessToken,
 				},
 				"User logged In Successfully"

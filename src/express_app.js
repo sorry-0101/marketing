@@ -6,11 +6,11 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 dotenv.config({ path: '../.env' });
-console.log('ACCESS_TOKEN_SECRET:', process.env.ACCESS_TOKEN_SECRET);
+// console.log('ACCESS_TOKEN_SECRET:', process.env.ACCESS_TOKEN_SECRET);
 const app = express();
 
 global.app_config = config.get("app_config");
-console.log("App Config:", global.app_config);
+// console.log("App Config:", global.app_config);
 global.logged_in_user = {};
 
 // Body parser, reading data from body into req.body
