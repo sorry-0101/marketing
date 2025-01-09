@@ -900,9 +900,7 @@ const getUserMessages = asyncHandler(async (req, res) => {
 // Delete a user's message
 const deleteUserMessage = asyncHandler(async (req, res) => {
 	const { messageId } = req.body;
-
 	await Message.findByIdAndDelete(messageId);
-
 	return res.status(200).json({ message: "Message deleted successfully" });
 });
 
@@ -918,65 +916,35 @@ const getUserLevel = asyncHandler(async (req, res) => {
 			});
 		}
 
-		const user = await User.findOne({ userId });
+		const [relatedUserIds, userWalletDetails, plans] = await Promise.all([
+			User.find({ sharedId: userId }, 'userId').then(users => users.map(user => user.userId)),
+			WalletTransaction.findOne({ userId }).sort({ _id: -1 }),
+			Plan.find({}),
+		]);
 
-		if (!user) {
-			return res.status(404).json({
-				success: false,
-				message: "User not found",
-			});
-		}
-
-		const sharedId = user?.sharedId;
-		const relatedUsers = await User.find({ sharedId });
-		const relatedUserIds = relatedUsers?.map((u) => u?.userId);
-
-		const walletBalances = await Promise.all(
+		const sharedUserWalletBalances = await Promise.all(
 			relatedUserIds?.map(async (id) => {
 				const walletDetails = await WalletTransaction.findOne({ userId: id }).sort({ _id: -1 });
-				return {
-					userId: id,
-					walletBalance: walletDetails?.balance || 0,
-				};
+				return { userId: id, walletBalance: walletDetails?.balance || 0, };
 			})
 		);
 
-		const walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
-		const plans = await Plan.find({});
-
-		const shareCount = walletBalances.filter((wallet) => wallet?.walletBalance > 100)?.length;
-		// console.log("shareCount",shareCount);
-		const eligiblePlans = plans?.filter((plan) => {
-
-			return (
-				plan.price <= (walletDetails?.balance || 0) &&
-				plan.shareLimit <= shareCount
-			);
-		});
-
-		const sortedPlans = eligiblePlans?.sort((a, b) => b?.price - a?.price);
-		console.log("sortedPlans", sortedPlans);
-		const activePlan = sortedPlans?.[0] || null;
-
-
+		const shareCount = sharedUserWalletBalances.filter((wallet) => wallet?.walletBalance > 100)?.length;
+		const activePlan = plans?.filter((plan) => (plan.price <= (userWalletDetails?.balance || 0) && plan.shareLimit <= shareCount))?.sort((a, b) => b?.price - a?.price)?.[0] || null;
 
 		return res.status(200).json({
 			success: true,
 			message: "User level retrieved successfully",
 			data: {
 				userId,
-				walletBalance: walletDetails?.balance || 0,
+				walletBalance: userWalletDetails?.balance || 0,
 				shareCount,
-				activePlan: activePlan || null,
-				// relatedUserIds,
-				walletBalances,
+				activePlan: activePlan,
+				walletBalances: sharedUserWalletBalances,
 			},
 		});
 	} catch (error) {
-		return res.status(500).json({
-			success: false,
-			message: "Failed to retrieve user level",
-		});
+		return res.status(500).json({ success: false, message: error?.message || 'Error while fetching data of user level' });
 	}
 });
 
