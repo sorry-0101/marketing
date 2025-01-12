@@ -65,17 +65,24 @@ const grabProduct = asyncHandler(async (req, res) => {
 			await countDetails.save(); // Save the updated countDetails
 		}
 
-		const TOLERANCE = 15; // Define a tolerance range for "near balance"
+		let product = null;
+		// Define a tolerance range for near balance
+		const TOLERANCE = 15;
 
-		const filteredProduct = productList?.filter((itm) => {
-			const balanceThreshold = userLastTransaction?.balance - 10;
-			return itm?.price < balanceThreshold && itm?.price >= balanceThreshold - TOLERANCE;
+		// Determine the affordable products based on balance
+		const affordableProducts = productList?.filter(product => {
+			const balance = userLastTransaction?.balance || 0;
+			if (parseInt(balance) >= 500) {
+				return product.price <= balance && product.price >= 500;
+			}
+			const balanceThreshold = balance - 10;
+			return product.price < balanceThreshold && product.price >= balanceThreshold - TOLERANCE;
 		});
 
-		// const filteredProduct = productList?.filter((itm) => itm?.price < (lastTransaction?.balance - 10));
-
-		// Access the random product from the array
-		const product = filteredProduct?.[Math.floor(Math.random() * filteredProduct?.length)];
+		// Randomly pick a product from the filtered list
+		if (affordableProducts?.length) {
+			product = affordableProducts[Math.floor(Math.random() * affordableProducts.length)];
+		}
 
 		if (!product) {
 			return res
