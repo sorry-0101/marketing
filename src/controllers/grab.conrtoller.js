@@ -67,7 +67,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 
 		let product = null;
 		// Define a tolerance range for near balance
-		const TOLERANCE = 15;
+		const TOLERANCE = 30;
 
 		// Determine the affordable products based on balance
 		const affordableProducts = productList?.filter(product => {
