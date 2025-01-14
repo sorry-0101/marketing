@@ -67,16 +67,19 @@ const grabProduct = asyncHandler(async (req, res) => {
 
 		let product = null;
 		// Define a tolerance range for near balance
-		const TOLERANCE = 30;
+		const TOLERANCE = 50;
 
 		// Determine the affordable products based on balance
-		const affordableProducts = productList?.filter(product => {
-			const balance = userLastTransaction?.balance || 0;
-			if (parseInt(balance) >= 500) {
-				return product.price <= balance && product.price >= 500;
+		const affordableProducts = productList?.filter(item => {
+			const balance = userLastTransaction?.balance;
+			if (!balance) {
+				return res.status(200).json(new ApiResponse(200, {}, "insufficient balance"));
 			}
-			const balanceThreshold = balance - 10;
-			return product.price < balanceThreshold && product.price >= balanceThreshold - TOLERANCE;
+
+			if (parseInt(balance) >= 500) {
+				return item.price <= balance && item.price >= 500;
+			}
+			return item?.price <= balance && item.price >= balance - TOLERANCE;
 		});
 
 		// Randomly pick a product from the filtered list
@@ -85,15 +88,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 		}
 
 		if (!product) {
-			return res
-				.status(200)
-				.json(
-					new ApiResponse(
-						200,
-						{},
-						"No product found in at this price range"
-					)
-				);
+			return res.status(200).json(new ApiResponse(200, {}, "No product found in at this price range"));
 		}
 
 		let savedProduct = null;
@@ -116,37 +111,21 @@ const grabProduct = asyncHandler(async (req, res) => {
 					});
 					await transaction.save();
 					await handleLevelCommission(sharedId, commission);
-					savedProduct = await updateUserCustomerProduct(
-						product,
-						commission,
-						userId
-					);
+					savedProduct = await updateUserCustomerProduct(product, commission, userId);
 					// Increment the user's call count
 					countDetails.grabCount += 1;
 					countDetails.grabCountLeft -= 1;
 					countDetails.callDate = new Date();
 					await countDetails.save();
-					var grabCountDtl = await ShareCount.findOne({ userId }).sort({
-						_id: -1,
-					});
+					var grabCountDtl = await ShareCount.findOne({ userId }).sort({ _id: -1, });
 				} catch (error) {
 					throw new ApiError(400, error);
 				}
 			}
 		} else {
-			return res
-				.status(200)
-				.json(
-					new ApiResponse(
-						200,
-						{},
-						"You have reached the maximum number of calls for today."
-					)
-				);
+			return res.status(200).json(new ApiResponse(200, {}, "You have reached the maximum number of calls for today."));
 		}
-		return res
-			.status(200)
-			.json(new ApiResponse(200, savedProduct, grabCountDtl, "product fetched successfully"));
+		return res.status(200).json(new ApiResponse(200, savedProduct, grabCountDtl, "product fetched successfully"));
 	} catch (error) {
 		throw new ApiError(400, error.message);
 	}
