@@ -702,7 +702,7 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 	}
 
 	// Check if the balance is sufficient for the withdrawal
-	if (lastTransaction?.totalProfit > 50) {
+	if (lastTransaction?.totalProfit < 50) {
 		return res
 			.status(400)
 			.json(new ApiResponse(400, null, "Can't withdraw the money. Total profit is less then 50."));
@@ -723,9 +723,9 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 		userId,
 		transactionId: generateTransactionId(),
 		credit: 0, // No credit since this is a withdrawal
-		debit: finalAmount, // Amount being withdrawn
-		balance: updatedProfitBalance ? lastTransaction?.balance - updatedProfitBalance : lastTransaction?.balance, // Updated balance after withdrawal
-		totalProfit: updatedProfitBalance ? updatedProfitBalance : lastTransaction?.totalProfit,
+		debit: amount,
+		balance: amount ? lastTransaction?.balance - amount : lastTransaction?.balance, // Updated balance after withdrawal
+		totalProfit: amount ? lastTransaction?.totalProfit - amount : lastTransaction?.totalProfit,
 		transactionType: "Withdrawal",
 		reference: "User Withdrawal",
 		referenceId: withdrawalRequest._id,
@@ -770,7 +770,9 @@ const getAllWithdrawals = asyncHandler(async (req, res) => {
 
 // change withdral request status
 const updateWithdrawalStatus = asyncHandler(async (req, res) => {
-	const { id, status } = req.body; // Get the withdrawal request ID and status from the request body
+	// const { id, status } = req.body; 
+	const {userId, address, amount ,status,id} = req.body;
+
 
 	// Validate fields
 	if (!id) {
@@ -796,6 +798,28 @@ const updateWithdrawalStatus = asyncHandler(async (req, res) => {
 	if (!withdrawalRequest) {
 		throw new ApiError(404, "Withdrawal request not found");
 	}
+	const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
+		_id: -1,
+	});
+	console.log(status)
+	
+	if(status=="Rejected"){	 
+	await WalletTransaction.create({
+	userId,
+	transactionId: generateTransactionId(),
+	credit: amount, // No credit since this is a withdrawal
+	debit: 0,
+	balance: amount ? lastTransaction?.balance + amount : lastTransaction?.balance, // Updated balance after withdrawal
+	totalProfit: amount ? lastTransaction?.totalProfit + amount : lastTransaction?.totalProfit,
+	transactionType: "Reject Withdrawal",
+	reference: "Cancel By User",
+	referenceId: withdrawalRequest._id,
+	address,
+	createdAt: new Date(),
+});
+}
+
+
 
 	// Send success response with the updated withdrawal request
 	return res

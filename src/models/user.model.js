@@ -115,7 +115,10 @@ const addressSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 const withdrawalRequestSchema = new Schema(
-	{
+	{  userId: {
+		type: String,
+		required: true,
+	  },
 		address: {
 			type: String,
 			required: true,
