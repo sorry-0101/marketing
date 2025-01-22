@@ -695,7 +695,7 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 	const updatedProfitBalance = lastTransaction.totalProfit - finalAmount;
 
 	// Check if the balance is sufficient for the withdrawal
-	if (lastTransaction?.totalProfit < finalAmount) {
+	if (lastTransaction?.totalProfit < amount) {
 		return res
 			.status(400)
 			.json(new ApiResponse(400, null, "Insufficient profit balance"));
@@ -771,7 +771,7 @@ const getAllWithdrawals = asyncHandler(async (req, res) => {
 // change withdral request status
 const updateWithdrawalStatus = asyncHandler(async (req, res) => {
 	// const { id, status } = req.body; 
-	const {userId, address, amount ,status,id} = req.body;
+	const { userId, address, amount, status, id } = req.body;
 
 
 	// Validate fields
@@ -801,23 +801,22 @@ const updateWithdrawalStatus = asyncHandler(async (req, res) => {
 	const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
 		_id: -1,
 	});
-	console.log(status)
-	
-	if(status=="Rejected"){	 
-	await WalletTransaction.create({
-	userId,
-	transactionId: generateTransactionId(),
-	credit: amount, // No credit since this is a withdrawal
-	debit: 0,
-	balance: amount ? lastTransaction?.balance + amount : lastTransaction?.balance, // Updated balance after withdrawal
-	totalProfit: amount ? lastTransaction?.totalProfit + amount : lastTransaction?.totalProfit,
-	transactionType: "Reject Withdrawal",
-	reference: "Cancel By User",
-	referenceId: withdrawalRequest._id,
-	address,
-	createdAt: new Date(),
-});
-}
+
+	if (status == "Rejected") {
+		await WalletTransaction.create({
+			userId,
+			transactionId: generateTransactionId(),
+			credit: amount, // No credit since this is a withdrawal
+			debit: 0,
+			balance: amount ? lastTransaction?.balance + amount : lastTransaction?.balance, // Updated balance after withdrawal
+			totalProfit: amount ? lastTransaction?.totalProfit + amount : lastTransaction?.totalProfit,
+			transactionType: "Reject Withdrawal",
+			reference: "Cancel By User",
+			referenceId: withdrawalRequest._id,
+			address,
+			createdAt: new Date(),
+		});
+	}
 
 
 

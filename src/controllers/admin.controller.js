@@ -762,7 +762,7 @@ const generateTransactionId = () => {
 
 const updateWithdrawalStatusByAdmin = asyncHandler(async (req, res) => {
 
-	const {userId, address, amount ,status,id} = req.body;
+	const { userId, address, amount, status, id } = req.body;
 
 	// Validate fields
 	if (!id) {
@@ -791,24 +791,25 @@ const updateWithdrawalStatusByAdmin = asyncHandler(async (req, res) => {
 		throw new ApiError(404, "Withdrawal request not found");
 	}
 
-		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
-			_id: -1,
-		});
-		
-	if(status?.split(" ")?.includes("Cancelled")){	 
+	const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
+		_id: -1,
+	});
+
+	if (status?.split(" ")?.includes("Cancelled")) {
 		await WalletTransaction.create({
-		userId,
-		transactionId: `txn_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-		credit: amount, // No credit since this is a withdrawal
-		debit: 0,
-		balance: amount ? lastTransaction?.balance + amount : lastTransaction?.balance, // Updated balance after withdrawal
-		totalProfit: amount ? lastTransaction?.totalProfit + amount : lastTransaction?.totalProfit,
-		transactionType: "Reject Withdrawal",
-		reference: "Cancel By Admin Withdrawal",
-		referenceId: withdrawalRequest._id,
-		address,
-		createdAt: new Date(),
-	});}
+			userId,
+			transactionId: `txn_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+			credit: amount, // No credit since this is a withdrawal
+			debit: 0,
+			balance: amount ? lastTransaction?.balance + amount : lastTransaction?.balance, // Updated balance after withdrawal
+			totalProfit: amount ? lastTransaction?.totalProfit + amount : lastTransaction?.totalProfit,
+			transactionType: "Reject Withdrawal",
+			reference: "Cancel By Admin Withdrawal",
+			referenceId: withdrawalRequest._id,
+			address,
+			createdAt: new Date(),
+		});
+	}
 
 	// Send success response with the updated withdrawal request
 	return res
