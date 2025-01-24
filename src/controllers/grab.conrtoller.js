@@ -77,7 +77,7 @@ const grabProduct = asyncHandler(async (req, res) => {
 			}
 
 			if (parseInt(balance) >= 500) {
-				return item.price <= balance && item.price >= 500;
+				return item.price <= balance && item.price >= 500 - TOLERANCE;
 			}
 			return item?.price <= balance && item.price >= balance - TOLERANCE;
 		});
