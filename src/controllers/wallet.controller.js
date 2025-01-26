@@ -140,7 +140,8 @@ const handleRequestMoneyTest = asyncHandler(async (req, res, trackId) => {
 				const response = await axios.post(
 					"https://api.oxapay.com/merchants/inquiry",
 					{
-						merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+						// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+						merchant: "63NL1V-E6A8UM-M2AU1V-EW5A59",
 						trackId: trackId.trackId,
 					}
 				);
