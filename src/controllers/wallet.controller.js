@@ -469,7 +469,7 @@ const addDepositAmountUser = asyncHandler(async (req, res) => {
 			balance: newBalance,
 			totalProfit: transactions ? transactions?.totalProfit : 0,
 			transactionType: "Deposit",
-			reference: "Admin Deposit",
+			reference: "User Self",
 			referenceId: userId,
 		});
 
