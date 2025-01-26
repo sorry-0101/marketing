@@ -73,7 +73,7 @@ const generateQr = asyncHandler(async (req, res) => {
 			"https://api.oxapay.com/merchants/request/whitelabel",
 			{
 				// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-				merchant: "63NL1V-E6A8UM-M2AU1V-EW5A59",
+				merchant: "Z55N7F-D84D7L-7DKA86-VKL3NS",
 				currency: currencyName,
 				payCurrency: currencyName,
 				amount: amount,
@@ -141,7 +141,7 @@ const handleRequestMoneyTest = asyncHandler(async (req, res, trackId) => {
 					"https://api.oxapay.com/merchants/inquiry",
 					{
 						// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-						merchant: "63NL1V-E6A8UM-M2AU1V-EW5A59",
+						merchant: "Z55N7F-D84D7L-7DKA86-VKL3NS",
 						trackId: trackId.trackId,
 					}
 				);
