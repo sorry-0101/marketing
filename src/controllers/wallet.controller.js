@@ -58,7 +58,6 @@ const depositAmount = asyncHandler(async (req, res) => {
 	}
 });
 
-
 const generateQr = asyncHandler(async (req, res) => {
 	const { currencyName, email, amount, mobileNo, blockchain, userId } =
 		req.body;
@@ -72,8 +71,7 @@ const generateQr = asyncHandler(async (req, res) => {
 		const response = await axios.post(
 			"https://api.oxapay.com/merchants/request/whitelabel",
 			{
-				// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-				merchant: "Z55N7F-D84D7L-7DKA86-VKL3NS",
+				merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
 				currency: currencyName,
 				payCurrency: currencyName,
 				amount: amount,
@@ -140,8 +138,7 @@ const handleRequestMoneyTest = asyncHandler(async (req, res, trackId) => {
 				const response = await axios.post(
 					"https://api.oxapay.com/merchants/inquiry",
 					{
-						// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-						merchant: "Z55N7F-D84D7L-7DKA86-VKL3NS",
+						merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
 						trackId: trackId.trackId,
 					}
 				);
