@@ -58,6 +58,7 @@ const depositAmount = asyncHandler(async (req, res) => {
 	}
 });
 
+
 const generateQr = asyncHandler(async (req, res) => {
 	const { currencyName, email, amount, mobileNo, blockchain, userId } =
 		req.body;
@@ -71,7 +72,8 @@ const generateQr = asyncHandler(async (req, res) => {
 		const response = await axios.post(
 			"https://api.oxapay.com/merchants/request/whitelabel",
 			{
-				merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+				// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+				merchant: "63NL1V-E6A8UM-M2AU1V-EW5A59",
 				currency: currencyName,
 				payCurrency: currencyName,
 				amount: amount,
