@@ -71,7 +71,8 @@ const generateQr = asyncHandler(async (req, res) => {
 		const response = await axios.post(
 			"https://api.oxapay.com/merchants/request/whitelabel",
 			{
-				merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+				// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+				merchant: "W2D8C8-S755B6-MZPLWA-8VKFH4",
 				currency: currencyName,
 				payCurrency: currencyName,
 				amount: amount,
@@ -138,7 +139,8 @@ const handleRequestMoneyTest = asyncHandler(async (req, res, trackId) => {
 				const response = await axios.post(
 					"https://api.oxapay.com/merchants/inquiry",
 					{
-						merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+						// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+						merchant: "W2D8C8-S755B6-MZPLWA-8VKFH4",
 						trackId: trackId.trackId,
 					}
 				);
@@ -146,8 +148,8 @@ const handleRequestMoneyTest = asyncHandler(async (req, res, trackId) => {
 				// Handle payment status based on response
 				if (response.data.status === "Paid") {
 					if (!responseSent) {
-						const depositAmount = response.data.receivedAmount; // Get the deposit amount from the response
-						const userId = trackId.userId; // Extract userId from trackId
+						const depositAmount = response.data.receivedAmount; 
+						const userId = trackId.userId; 
 
 						// Call the addDepositAmountAdmin function
 						await addDepositAmountUser(
@@ -469,7 +471,7 @@ const addDepositAmountUser = asyncHandler(async (req, res) => {
 			balance: newBalance,
 			totalProfit: transactions ? transactions?.totalProfit : 0,
 			transactionType: "Deposit",
-			reference: "Admin Deposit",
+			reference: "User Self",
 			referenceId: userId,
 		});
 
