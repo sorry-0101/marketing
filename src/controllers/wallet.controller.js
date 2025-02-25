@@ -67,8 +67,8 @@ const generateQr = asyncHandler(async (req, res) => {
 		const response = await axios.post(
 			"https://api.oxapay.com/merchants/request/whitelabel",
 			{
-				// merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
-				merchant: "W2D8C8-S755B6-MZPLWA-8VKFH4",
+				merchant: "NCV36N-GTMR3L-6XHTHD-62W176",
+				// merchant: "W2D8C8-S755B6-MZPLWA-8VKFH4",
 				currency: currencyName,
 				payCurrency: currencyName,
 				amount: amount,
