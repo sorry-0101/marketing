@@ -15,18 +15,16 @@ const depositAmount = asyncHandler(async (req, res) => {
 			throw new ApiError(400, "Deposit Amount Amount or user id not found");
 		}
 
-		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({
-			_id: -1,
-		});
+		const lastTransaction = await WalletTransaction.findOne({ userId }).sort({ _id: -1, });
 
 		if (lastTransaction) {
 			const transaction = new WalletTransaction({
 				userId: userId,
 				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 				credit: depositAmount,
-				balance: lastTransaction?.length ? lastTransaction?.balance + depositAmount : depositAmount,
+				balance: lastTransaction?.balance + depositAmount || depositAmount,
 				transactionType: "Credit Amount",
-				totalProfit: lastTransaction?.length ? lastTransaction?.totalProfit : 0,
+				totalProfit: lastTransaction?.totalProfit || 0,
 				reference: `self`,
 				referenceId: userId,
 			});
@@ -36,17 +34,15 @@ const depositAmount = asyncHandler(async (req, res) => {
 				userId: userId,
 				transactionId: `${Math.floor(Math.random() * 100000)}${Date.now()}`,
 				credit: depositAmount,
-				balance: lastTransaction?.length ? lastTransaction.balance + depositAmount : depositAmount,
+				balance: lastTransaction.balance + depositAmount || depositAmount,
 				transactionType: "Credit Amount",
-				totalProfit: lastTransaction?.length ? lastTransaction?.totalProfit : 0,
+				totalProfit: lastTransaction?.totalProfit || 0,
 				reference: `self`,
 				referenceId: userId,
 			});
 		}
 
-		const walletDetails = await WalletTransaction.findOne({ userId }).sort({
-			_id: -1,
-		});
+		const walletDetails = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 
 		return res
 			.status(200)
@@ -148,8 +144,8 @@ const handleRequestMoneyTest = asyncHandler(async (req, res, trackId) => {
 				// Handle payment status based on response
 				if (response.data.status === "Paid") {
 					if (!responseSent) {
-						const depositAmount = response.data.receivedAmount; 
-						const userId = trackId.userId; 
+						const depositAmount = response.data.receivedAmount;
+						const userId = trackId.userId;
 
 						// Call the addDepositAmountAdmin function
 						await addDepositAmountUser(
@@ -227,13 +223,10 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 		}
 
 		// Fetch previous transactions for the user, excluding zero-credit/debit transactions
-		const transactions = await WalletTransaction.find({
-			userId,
-			$or: [{ credit: { $ne: 0 } }, { debit: { $ne: 0 } }],
-		}).sort({ createdAt: -1 }).select("-__v");
+		const transactions = await WalletTransaction.findOne({ userId }).sort({ _id: -1 });
 
 		// Calculate the current balance
-		const balance = transactions?.length > 0 ? transactions?.[0]?.balance : 0;
+		const balance = transactions?.balance || 0;
 		const newBalance = balance + parseInt(depositAmount);
 
 		// Create a new transaction for the deposit
@@ -242,7 +235,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 			transactionId: generateTransactionId(),
 			credit: parseInt(depositAmount),
 			balance: newBalance,
-			totalProfit: transactions?.length ? transactions?.totalProfit : 0,
+			totalProfit: transactions?.totalProfit || 0,
 			transactionType: "Deposit",
 			reference: "Admin Deposit",
 			referenceId: userId,
@@ -251,7 +244,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 		await transaction.save();
 
 		// Check if this is the first non-zero deposit and amount is greater than 100
-		if (transactions?.length === 0 && depositAmount >= 100) {
+		if (transactions && depositAmount >= 100) {
 			const bonus = depositAmount * 0.05; // 5% bonus
 
 			// Add bonus for the user
@@ -260,7 +253,7 @@ const addDepositAmountAdmin = asyncHandler(async (req, res) => {
 				transactionId: generateTransactionId(),
 				credit: bonus,
 				balance: newBalance + bonus,
-				totalProfit: transactions?.length ? transactions?.totalProfit + bonus : bonus,
+				totalProfit: transactions ? transactions?.totalProfit + bonus : bonus,
 				transactionType: "Bonus",
 				reference: "First Time Deposit Bonus",
 				referenceId: userId,
